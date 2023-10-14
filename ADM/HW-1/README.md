@@ -4,9 +4,7 @@
 
 Here is all my resolved code for Problem-1 of HW1. Challenges are all selected from HackerRank website.
 
-## Problem 1: Problem Solving Challenges:
-
-Some comprehensive python challanges: 
+## Problem 2: Some comprehensive python challanges: 
 - Birthday Cake Candles
 - Kangaroo
 - Strange Advertising
