@@ -1,0 +1,326 @@
+# AWS Academy Introduction to Cloud: Semester 1 :
+
+*************************************
+*********   Module - 1  *************
+*************************************
+
+Cloud Computing:
+    The on-demand delivery of compute power, databases, storage, applications, and other IT resources using the internet with pay-as-you-go pricing.
+
+Amazon Web Services (AWS):
+    A platform that provides a wide range of cloud computing services.
+
+Cloud storage
+    Saving data using a cloud service provider (CSP) instead of a physical machine.
+
+Server:
+    A computer designed to process requests and deliver data to another computer over the Internet or a local network. In the cloud, a server is hosted by an outside provider, which is accessed over the internet.
+
+benefits:
+    Pay less
+    Services are cheaper because costs are spread across many users.
+    you only pay for what you use.
+    faster and easier to add new resources
+    Cloud providers maintain, secure
+    easy to release your application
+
+*************************************
+*********   Module - 2   ************
+*************************************
+
+## Type of Cloud Service:
+
+Infrastructure as a service (IaaS):
+    A model in which virtual machines and servers are used for customers to host a wide range of applications and IT services are provided. 
+    - Compute power, networking, and storage provided over the internet
+    - Amazon Elastic Compute Cloud (Amazon EC2), Rackspace, Google Compute Engine
+    These services contain the basic building blocks of the cloud. They provide access to computers—physical and virtual—and to network features and storage space.
+
+Platform as a service (PaaS):
+    A model that provides a virtual platform for customers to create custom software.
+    - Tools provided over the internet for making programs and applications
+    - AWS Elastic Beanstalk, Microsoft Azure, Google App Engine, Wix
+    These services are the tools needed to manage the underlying hardware and launch applications. They include programming environments, application testing platforms, and application launchers.
+Software as a service (SaaS):
+    A model that provides applications using the internet that are managed by a third party.
+    - Applications and programs that are accessed and provided over the internet
+    - Dropbox, Slack, Spotify, YouTube, Microsoft Office 365, Gmail, platforms
+    These services are the actual apps and software provided over the internet. You are not responsible for managing or installing the software; you just access and use it. 
+    internet-based word processing instead of software such as Microsoft Word, and Spotify instead of CDs and MP3 players. 
+
+Region:
+    An area where data is stored. Data storage in a Region closest to you is one of the reasons it can be accessed at lightning speed.
+    Data storage in a nearby Region is one o the reasons data can be accessed at 
+
+Availability Zone:
+    One or more data centers that house many servers. Each Region has multiple, isolated locations known as Availability Zones. Each Availability Zone is isolated, but the Availability Zones in a Region are connected through low-latency links. An Availability Zone is represented by a region code followed by a letter identifier, for example, us-east-1a.
+
+Edge location:
+    A site where data can be stored for lower latency. Often, edge locations will be close to high-population areas that will generate high traffic volumes.
+
+Region > Availability Zone > edge location
+
+Latancy:
+    The delay before a transfer of data begins after the data has been requested.
+
+*************************************
+*********   Module - 3   ************
+*************************************
+
+Amazon Simple Storage Service (Amazon S3):
+    A service provided by AWS that stores data for users in the cloud.
+
+Amazon Elastic Compute Cloud (Amazon EC2):
+    A web service that provides secure, resizable compute capacity in the cloud. Think of it as renting a computer in the cloud.   
+    anything from machine learning, to running applications, querying databases, and streaming video.
+
+Amazon Elastic Block Store (Amazon EBS):
+    Storage for specific EC2 instances. Think of it as the storage drive for your EC2 instance.
+
+Amazon S3 and Amazon EBS differences:
+    -   Amazon EBS can only be used when attached to an EC2 instance, and Amazon S3 can be accessed on its own.
+    -   Amazon EBS cannot hold as much data as Amazon S3.
+    -   Amazon EBS can only be attached to one EC2 instance, whereas data in an S3 bucket can be accessed by multiple EC2 instances.
+    -   Amazon S3 experiences more delays than Amazon EBS when writing data.
+
+S3 bucket:
+    A container of objects (such as images, audio files, video files, documents, and so on) in Amazon S3. 
+    
+Amazon Relational Database Service (Amazon RDS):
+    This lets developers create and manage relational databases in the cloud. Think of a relational database as a set of data with one-to-one relationships. For example, a database of transactions in a department store would match every customer with their purchases. Amazon RDS lets developers track large amounts of this data, and organize and search through it easily. Relational databases are equipped with nonprocedural structured query language (SQL) that simplifies interactions with the database.
+
+## Databases:
+
+Amazon DynamoDB:
+    The AWS nonrelational database service. Data is stored in key-value pairs.
+
+Amazon Redshift:
+    The AWS data-warehousing service can store massive amounts of data in a way that makes it fast to query for business intelligence purposes.
+
+Amazon RDS, Amazon Redshift, and DynamoDB differences:
+    -   Amazon RDS is the classic relational database that uses SQL Server, Oracle Database, Amazon Aurora, or other similar database systems.
+    -   Amazon Redshift is a relational database (SQL) like Amazon RDS, but it is specifically made for huge amounts of data. Good for big data.
+    -   DynamoDB is a nonrelational database (NoSQL), meaning that you can’t use traditional systems like SQL Server or Aurora. Each item in the database is stored as a key-value pair or JavaScript Object Notation (JSON). This means that each row could have a different number of columns. The entries do not all have to be matched in the same way. This permits flexibility in processing that works well for blogging, gaming, and advertising.
+
+AWS Lambda:
+    Lambda lets you run code without provisioning or managing servers. You pay only for the compute time you consume—there is no charge when your code is not running. With Lambda, you can run code for virtually any type of application or backend service—all with zero administration. Upload your code, and Lambda takes care of everything required to run and scales your code with high availability. You can set up your code to automatically start from other AWS services or call it directly from any web or mobile app.
+
+Amazon Virtual Private Cloud (Amazon VPC):
+    -   A service that provides a virtual network that is dedicated to your AWS account. It is logically isolated from other virtual networks in the AWS Cloud. All your AWS services can be launched from a VPC. It is useful for protecting your data and managing who can access your network.
+    -   Amazon VPC is the virtual network you define where you launch AWS resources. This virtual network closely resembles a traditional network that you operate in your own data center, with the benefits of using the scalable infrastructure of AWS.
+
+    In general, it is recommended that users create EC2 instances and S3 buckets within a VPC. The VPC is a private network through which the S3 buckets or EC2 instances will be accessed. Using a VPC allows you to strictly control who has access to your resources and from where they can get access. VPCs can be broken down into subnets to give even more granular control over access and security. A VPC is Region based.
+
+AWS Identity and Access Management (IAM):
+    Involves the application of controls to users who need access to computing resources.
+
+## Cloud Monitoring Services:
+
+AWS CloudTrail:
+    Monitors every action that is performed on your AWS account for security purposes. Basically, it is a log.
+
+Amazon CloudWatch:
+    CloudWatch is a monitoring service to monitor your AWS resources and the applications that you run on AWS.
+
+CloudTrail and CloudWatch differences:
+    -   CloudTrail monitors all the actions that users have taken in a given AWS account. any other action that can be done on AWS, CloudTrail will keep a log of it. Shows who is using their account and what they are doing.
+    -   CloudWatch monitors what all the different services are doing and what resources they are using. If CloudTrail is the people monitor, CloudWatch is the service monitor. CloudWatch is great for making sure that your cloud services are running smoothly and not using more or fewer resources than you expect, which is important for budget tracking. Monitors and alarms can be set up through CloudWatch to automatically initiates an alert when a metric hits a specific limit.
+
+
+*************************************
+*********   Module - 4  *************
+*************************************
+
+Domain Name System (DNS):
+    A naming system for computers, devices, and resources connected to a network.
+
+Domain name:
+    A label that identifies a network of computers under centralized control.
+
+Policy:
+    An object in AWS that, when associated with an identity or a resource, defines its permissions. AWS evaluates these policies when a principal entity (user or role) makes a request.
+
+Amazon Route 53:
+    The AWS DNS web service.
+    To register a domain name for your website, you can use Route 53. Registering a domain name will cost money, so this will be optional, but you can still navigate to the service to see how it works.
+
+Virtual private cloud (VPC):
+    A virtual network dedicated to your AWS account. It is logically isolated from other virtual networks in the AWS Cloud. All your AWS services can be launched from a VPC. It is useful for protecting your data and managing who can access your network.
+
+JavaScript Object Notation (JSON):
+    A syntax for storing and exchanging data.
+
+Dynamic website:
+    A website that changes based on user interactions; often built using Python, JavaScript, PHP, or ASP with Hypertext Markup Language (HTML).
+
+Static website:
+    A website that does not change based on user interactions; typically built using HTML and Cascading Style Sheets (CSS).
+
+Static and Dynamic website differences:
+    There are two types of websites: static and dynamic. Static websites require no actions to take place on the server. Dynamic websites require interactions with the server to respond to requests made on the client machines.
+
+---
+LAB 
+---
+
+- click on the AWS text (wait till the dot beside it turns to green)
+
+## For creating S3 service:
+
+then, you redirect to the AWS platform.
+then click on ‘S3’ service.
+then press ‘create bucket’ which is unique.
+
+for the AWS Region, choose:
+US East (N. Virginia) us-east-1
+then go to permissions
+> Block public access (bucket settings)
+> Edit
+uncheck all the blocks, so your bucket will be public
+
+go to permissions > Object OwnershipInfo > Edit
+change to ‘ACLs enabled’
+
+## For creating EC2 service:
+return to home page, select ‘View all services’
+click on ‘EC2’ below ‘Compute’,
+click on lunch instance
+give it a unique name, like ‘my-windows’
+select ‘Windows’ Operating system,
+Instance type: t2.micro
+create your own key-pair and download it
+press Launch Instance
+
+Once you created your instance, click on the ‘Instance ID’ and, and press ‘Connect’ then, 
+click on RDP Client,
+download remote desktop file,
+then, click on ‘Get password’
+upload your key-pair
+press Decrypt password
+
+** now you have both password, and the remote desktop file.
+
+then, open the file with a software which is a remote connecter.
+in mac, you can use ‘Microsoft Remote Desktop’
+
+NOTE:
+you need to be connected to your sim-card wifi hotspot rather than the public wifi of sapienza.
+
+Note:
+you should know how to use the above steps in the assignments.
+
+*************************************
+*********   Module - 7  *************
+*************************************
+
+AWS Identity and Access Management (IAM):
+    -   Involves the application of controls to users who need access to computing resources.
+    -   An IAM user is an entity created in AWS. It represents the person using the AWS services and gives people the ability to sign in to AWS. A user will be assigned a name and password to access the AWS console.
+
+Role:
+    -   An IAM identity that you can create in your account that has specific permissions.
+    -   A role does not have any credentials (password or access keys) associated with it. Instead of being uniquely associated with one person, a role is intended to be assumable by anyone who needs it. An IAM user can assume a role to temporarily take on different permissions for a specific task. Roles are useful in instances where a mobile app is accessing your AWS data.
+    -   By assigning a role when the user logs in, they are granted temporary access with some permissions, but not permanent credentials.
+User:
+    An entity that you create in Amazon Web Services (AWS) to represent the person or application that uses it to interact with AWS. A user in AWS consists of a name and credentials.
+
+Security group:
+    A security group acts as a virtual firewall for your instance to control inbound and outbound traffic.
+
+Policy:
+    -   An object in AWS that, when associated with an identity or a resource, defines its permissions. AWS evaluates these policies when a principal entity (user or role) makes a request.
+    -   A policy, when attached to a user, role, or group, defines their permissions. Policies are stored in AWS as JSON documents. It is best practice to assign policies to groups and then assign each user and role to a group when created.
+
+Amazon Inspector:
+    Helps customers identify security vulnerabilities and deviations from security best practices in applications, before they are deployed and while they are running in a production environment.
+
+Group:
+    -   An IAM group is a collection of IAM users. Groups let you specify permissions for multiple users, which can make it easier to manage the permissions for those users.
+    -   A group is a collection of IAM users. You can use groups to specify permissions for a collection of users, which can make those permissions easier to manage for those users.
+    -   Any user in that group automatically has the permissions that are assigned to the group. If a new user joins your organization and needs administrator privileges, you can assign the appropriate permissions by adding the user to that group. Similarly, if a person changes jobs in your organization, instead of editing that user's permissions, you can remove him or her from the old groups
+
+Root user:
+    When you first create an AWS account, you begin with a single sign-in identity that has complete access to all AWS services and resources in the account.
+
+Credential:
+    AWS security credentials verify who you are and whether you have permission to access the resources that you are requesting.
+
+Enable multi-factor authentication (MFA):
+    This approach to authentication requires two or more independent pieces of information to be authenticated.
+
+JavaScript Object Notation (JSON):
+    A syntax for storing and exchanging data.
+
+Multi-factor authentication (MFA):
+    A security system that requires more than one method of authentication from independent categories of credentials to verify the user's identity for a login or other transaction.
+
+AWS identities:
+
+    -   When thinking about IAM in AWS, there are roles, identities, and groups, all of which are governed by policies.
+    -   At the highest level is the root user. This is the identity that created the AWS account. The root user has access to every aspect of AWS and acts as a universal administrator. 
+    -   The root user credentials should never be given out, and it is not even recommended for the account creator to do everyday tasks as the root user. Instead, the root user account should be used to make an administrator account. Only a few tasks must be done as the root user, such as changing the AWS support plan or closing an account.
+
+*************************************
+*********   Module - 13 *************
+*************************************
+
+Artificial intelligence (AI):
+    A computer system able to perform tasks that normally require human intelligence, such as visual perception, speech recognition, decision-making, and translation between languages
+    
+Machine learning (ML):
+    -   A subset of artificial intelligence (AI) in which a computer algorithm can modify its own behavior
+    -   In its simplest form, machine learning is finding patterns in data and making predictions on future data based on those patterns. Then, it measures the accuracy of those predictions and repeats this thousands or millions of times to more accurately predict things like weather, media recommendations, and sports outcomes.
+
+Deep learning:
+    An AI learning process; the process of the AI scanning the artificial neural network
+
+Neural network:
+    A model or algorithm that is designed to make decisions in a way similar to a human brain
+
+Amazon SageMaker:
+    Provides every developer and data scientist with the ability to build, train, and deploy ML models quickly
+
+AWS DeepRacer:
+    A fully autonomous, 1/18th-scale race car driven by reinforcement learning, a 3D racing simulator, and a global racing league
+
+AWS DeepLens:
+    A fully programmable video camera, with tutorials, code, and pretrained models designed to expand ML skills
+
+---
+
+Supervised ML:
+    Supervised ML starts with training data that includes the required output to adjust the ML algorithm. Supervised ML algorithms are divided into two categories, classification and regression:
+
+    1. Classification: Classification algorithms examine an input and choose a response from specific preset choices. For example, an algorithm might be trained to classify emails as spam or not spam.
+
+    2. Regression: Regression algorithms are trained to assign a value, or a number, to an input. For example, a weather prediction regression might be trained to give a predicted temperature for a given date in the future.
+
+Unsupervised ML:
+    Unsupervised machine learning starts with training data that does not include the desired output. Unsupervised machine learning algorithms can examine input and group related items together into groups called clusters. The clusters are not predefined or labeled, but are inferred by the algorithm during the training process.
+
+Semi-supervised ML:
+    Semisupervised ML algorithms combine some features of supervised ML with some features of unsupervised ML. Usually semisupervised ML algorithms start training with a relatively small amount of labeled data and then analyze large amounts of unlabeled data to improve accuracy.
+
+Reinforcement ML:
+    With reinforcement learning, the algorithm receives feedback to guide it to the best outcome. Reinforcement learning allows the algorithm to develop complex behaviors by refining the output through trial and error. 
+    - An example of reinforcement machine learning in action is an autonomous robot that learns to stay within a driving lane by receiving a reward for proceeding in the right direction or staying inside lane markers.
+
+*************************************
+*********   Module - 14 *************
+*************************************
+
+AWS Simple Monthly Calculator:
+    Provides an estimated monthly bill based on the storage and compute requirements of the user.
+
+AWS Support plan:
+    Support plans are designed to give you the right mix of tools and access to expertise so that you can be successful with AWS while optimizing performance, managing risk, and keeping costs under control.
+
+AWS Organizations:
+    Helps you centrally manage billing; control access, compliance, and security; and share resources across your AWS accounts.
+
+Consolidated billing:
+    With the consolidated billing feature in Organizations, you can consolidate billing and payment for multiple AWS accounts. Every organization in Organizations has a management (payer) account that pays the charges of all the member (linked) accounts.
+
+Technical Account Manager (TAM):
+    This dedicated support person and cloud advisor for enterprise-level AWS accounts answers support questions, monitors your cloud account, and gives recommendations for optimization.
+
