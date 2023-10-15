@@ -1,0 +1,4829 @@
+Python
+
+https://www.python.org/
+https://pypi.org/
+https://bokeh.org/
+https://jupyter.org/
+https://justpy.io/tutorial/html_components/
+https://python-visualization.github.io/folium/
+https://quasar.dev/
+https://www.highcharts.com/demo
+https://docs.aiohttp.org/en/stable/
+https://kivy.org/
+https://www.fullstackpython.com/django.html
+https://flask.palletsprojects.com/en/2.0.x/
+
+
+======================================================================
+
+Installing packages using pip and virtual environments:
+https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/
+
+install pakages:
+python -m pip install SomePackage            # latest version
+python -m pip install SomePackage==1.0.4     # specific version
+python -m pip install 'SomePackage>=1.0.4'     # minimum version
+
+install pakages from "requirements.txt" file:
+python -m pip install -r requirements.txt
+
+OR
+
+python -m pip freeze > requirements.txt         // generate  In this case, your requirement file contains a pinned version of everything that was installed when pip freeze was run.
+python -m pip install -r requirements.txt
+
+Pip can export a list of all installed packages and their versions using the freeze command.
+
+Find and install python packages:
+https://pypi.org/
+
+To create a virtual environment and install pakages there, go to your project’s directory and run venv:
+$ python3 -m venv env
+
+The second argument is the location to create the virtual environment. 
+Generally, you can just create this in your project and call it env.
+
+venv will create a virtual Python installation in the env folder.
+
+
+
+Note:
+You should exclude your virtual environment directory from your version control system using .gitignore or similar. 
+
+Activating a virtual environment:
+Before you can start installing or using packages in your virtual environment you’ll need to activate it. 
+Activating a virtual environment will put the virtual environment-specific python and pip executables 
+into your shell’s PATH.
+
+$ source env/bin/activate
+
+You can confirm you’re in the virtual environment by checking the location of your Python interpreter:
+$ which python          // It should be in the env directory:  .../env/bin/python
+
+As long as your virtual environment is activated pip will install packages into that specific environment 
+and you’ll be able to import and use packages in your Python application.
+
+If you want to switch projects or otherwise leave your virtual environment, simply run:
+deactivate
+
+============================
+========= Attention ========
+============================
+
+you can install and use Anaconda. Anaconda is a python platform that provides you popular preinstalled packages.
+by installing Anaconda, you can install any extra package with 'conda'.
+you can also create virtual environment based on Anaconda.
+
+*** NOTE ***
+to set python version that is installed by anaconda and open Select Interpreter, press:
+command + shift + P 
+
+and select:
+>Python: Select Interpreter
+
+then chose:
+Python 3.9.12 ('base') ~/opt/anaconda3/bin/python
+
+
+With conda, you can create, export, list, remove, and update environments that have different 
+versions of Python and/or packages installed in them. Switching or moving between environments 
+is called activating the environment. You can also share an environment file.
+
+https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html
+
+To create an environment with the name of "myenv":
+conda create --name myenv
+
+proceed ([y]/n)? 
+y
+
+To create an environment with a specific version of Python:
+conda create -n myenv python=3.9
+
+To create an environment with a specific package:
+conda create -n myenv scipy
+
+OR:
+conda create -n myenv python
+conda install -n myenv scipy
+
+
+To create an environment with a specific version of a package:
+conda create -n myenv scipy=0.17.3
+
+OR:
+conda create -n myenv python
+conda install -n myenv scipy=0.17.3
+
+To create an environment with a specific version of Python and multiple packages:
+conda create -n myenv python=3.9 scipy=0.17.3 astroid babel
+
+Creating an environment from an environment.yml file:
+conda env create -f environment.yml
+
+Verify that the new environment was installed correctly:
+conda env list
+
+You then activate an environment created with a prefix using the same command used to 
+activate environments created by name:
+conda activate ./envs
+
+Updating an environment:
+$ conda env update --prefix ./env --file environment.yml  --prune
+
+Deactivating an environment:
+conda deactivate
+
+Using pip in an environment:
+conda install -n myenv pip
+conda activate myenv
+pip <pip_subcommand>
+
+Removing an environment:
+conda remove --name myenv --all
+
+To verify that the environment was removed:
+conda info --envs
+
+Using Pip to install packages to Anaconda Environment:
+At first, install pip to your virtual environment:
+
+Run 
+conda create -n venv_name
+and 
+conda activate venv_name, 
+where "venv_name" is the name of your virtual environment.
+
+Run 
+conda install pip
+
+This will install pip to your venv directory.
+
+*** NOTE ***
+to access the conda virtual environment, you should press:
+Command + Shift + P
+
+and select 
+Select Interpreter
+
+From the list, select the virtual environment in your project folder that starts with .env
+
+so you need to name the virtual environment based on the project.
+
+============================
+========= Attention ========
+============================
+
+You can install Anaconda and use its preinstalled packages. but if you want to use the latest version of python,
+you can create a virtual environment via 'conda' and install every package you want in there. and always use that 
+virtual environment.
+
+
+Furthermore, You can config a '.condarc' file to make sure what default packages or features should be included
+in new environments.
+-----------------
+conda deactivate
+conda create --name master
+conda activate master
+conda install -c conda-forge python 
+-----------------
+
+The .condarc file is not included by default, but it is automatically created in your home directory the first time 
+you run the conda config command. To create or modify a .condarc file, open Anaconda Prompt or a terminal and enter 
+the conda config command.
+
+https://docs.conda.io/projects/conda/en/latest/user-guide/configuration/use-condarc.html
+
+you can find this file by:
+go to finder, press: Command + Shift + G
+and type: ~/.condarc
+
+------------------------------------------
+.condarc
+--------
+ssl_verify: true
+channels:
+  - main
+  - defaults
+always_yes: True
+auto_update_conda: True
+------------------------------------------
+
+======================================================================
+run python in watch mode via 'nodemon':
+---
+$ nodemon script.py
+---
+
+to run python, click on triangle or run $ python filename.py
+
+in order to use python shell, just write $ python
+and write sth in it.
+---
+>>> 2*2
+4
+---
+x = 10
+y = "10"
+z = 10.2
+
+print(type(x))      <class 'int'>
+print(type(y))      <class 'str'>
+print(type(z))      <class 'float'>
+---
+we cannot add string to numbers.
+
+by writing $dir() in python shell
+we can see all things we can do with a specific type:
+----------------------------
+>>> dir(list)
+['__add__', '__class__', '__contains__', '__delattr__', '__delitem__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__getitem__', '__gt__', '__hash__', '__iadd__', '__imul__', '__init__', '__init_subclass__', '__iter__', '__le__', '__len__', '__lt__', '__mul__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__reversed__', '__rmul__', '__setattr__', '__setitem__', '__sizeof__', '__str__', '__subclasshook__', 'append', 'clear', 'copy', 'count', 'extend', 'index', 'insert', 'pop', 'remove', 'reverse', 'sort']
+----------------------------
+or
+>>> dir(int)
+>>> dir(str)
+
+for example we can write:
+x = "hello"
+x = x.upper()
+y = x.title()
+print(x)   // HELLO
+print(y)   // Hello
+
+to get the average of this array or list:
+we can use built-in functions. by writing 
+>>> dir(__builtins__)
+-------
+student_grades = [9.1, 8.8, 7.5]
+mysum = sum(student_grades)
+print(mysum / len(student_grades))
+-------
+
+len(myList)     # returns the length of a list.
+-------
+
+isinstance("abc", str)  # returns True
+check if given variable is an instance of specific class
+
+//////////////////
+/////  Set  //////
+//////////////////
+
+Sets are used to store multiple items in a single variable:
+myset = {"apple", "banana", "cherry"} 
+
+Set items are unordered, unchangeable, and do not allow duplicate values.
+Unordered means that the items in a set do not have a defined order.
+Set items can appear in a different order every time you use them, 
+and cannot be referred to by index or key.
+
+Set items are unchangeable, meaning that we cannot change the items after the set has been created.
+
+Sets cannot have two items with the same value.
+
+Duplicate values will be ignored:
+thisset = {"apple", "banana", "cherry", "apple"}
+
+print(thisset)          // {'banana', 'cherry', 'apple'}
+---
+CREATING SETS
+---
+
+>> myset = {1, 2} # Directly assigning values to a set
+>> myset = set()  # Initializing a set
+>> myset = set(['a', 'b']) # Creating a set from a list
+>> myset
+{'a', 'b'}
+
+---
+MODIFYING SETS 
+---
+Using the add() function:
+
+>> myset.add('c')
+>> myset
+{'a', 'c', 'b'}
+>> myset.add('a') # As 'a' already exists in the set, nothing happens
+>> myset.add((5, 4))
+>> myset
+{'a', 'c', 'b', (5, 4)}
+
+
+Using the update() function:
+
+>> myset.update([1, 2, 3, 4]) # update() only works for iterable objects
+>> myset
+{'a', 1, 'c', 'b', 4, 2, (5, 4), 3}
+>> myset.update({1, 7, 8})
+>> myset
+{'a', 1, 'c', 'b', 4, 7, 8, 2, (5, 4), 3}
+>> myset.update({1, 6}, [5, 13])
+>> myset
+{'a', 1, 'c', 'b', 4, 5, 6, 7, 8, 2, (5, 4), 13, 3}
+
+REMOVING ITEMS 
+
+>> myset.discard(10)
+>> myset
+{'a', 1, 'c', 'b', 4, 5, 7, 8, 2, 12, (5, 4), 13, 11, 3}
+>> myset.remove(13)
+>> myset
+{'a', 1, 'c', 'b', 4, 5, 7, 8, 2, 12, (5, 4), 11, 3}
+
+
+COMMON SET OPERATIONS Using union(), intersection() and difference() functions. 
+
+>> a = {2, 4, 5, 9}
+>> b = {2, 4, 11, 12}
+>> a.union(b) # Values which exist in a or b
+{2, 4, 5, 9, 11, 12}
+>> a.intersection(b) # Values which exist in a and b
+{2, 4}
+>> a.difference(b) # Values which exist in a but not in b
+{9, 5}
+
+>> a.union(b) == b.union(a)
+True
+>> a.intersection(b) == b.intersection(a)
+True
+>> a.difference(b) == b.difference(a)
+False
+
+https://www.thelearningpoint.net/computer-science/learning-python-programming-and-data-structures/learning-python-programming-and-data-structures--tutorial-4--built-in-data-structures-strings-lists-tuples-dictionaries-mutability
+
+
+.union()
+
+The .union() operator returns the union of a set and the set of elements in an iterable.
+Sometimes, the | operator is used in place of .union() operator, but it operates only on the set of elements in set.
+Set is immutable to the .union() operation (or | operation).
+
+Example
+
+>>> s = set("Hacker")
+>>> print s.union("Rank")
+set(['a', 'R', 'c', 'r', 'e', 'H', 'k', 'n'])
+
+>>> print s.union(set(['R', 'a', 'n', 'k']))
+set(['a', 'R', 'c', 'r', 'e', 'H', 'k', 'n'])
+
+>>> print s.union(['R', 'a', 'n', 'k'])
+set(['a', 'R', 'c', 'r', 'e', 'H', 'k', 'n'])
+
+>>> print s.union(enumerate(['R', 'a', 'n', 'k']))
+set(['a', 'c', 'r', 'e', (1, 'a'), (2, 'n'), 'H', 'k', (3, 'k'), (0, 'R')])
+
+>>> print s.union({"Rank":1})
+set(['a', 'c', 'r', 'e', 'H', 'k', 'Rank'])
+
+>>> s | set("Rank")
+set(['a', 'R', 'c', 'r', 'e', 'H', 'k', 'n'])
+
+
+.intersection()
+
+The .intersection() operator returns the intersection of a set and the set of elements in an iterable.
+Sometimes, the & operator is used in place of the .intersection() operator, but it only operates on the set of elements in set.
+The set is immutable to the .intersection() operation (or & operation).
+
+>>> s = set("Hacker")
+>>> print s.intersection("Rank")
+set(['a', 'k'])
+
+>>> print s.intersection(set(['R', 'a', 'n', 'k']))
+set(['a', 'k'])
+
+>>> print s.intersection(['R', 'a', 'n', 'k'])
+set(['a', 'k'])
+
+>>> print s.intersection(enumerate(['R', 'a', 'n', 'k']))
+set([])
+
+>>> print s.intersection({"Rank":1})
+set([])
+
+>>> s & set("Rank")
+set(['a', 'k'])
+
+
+.difference()
+
+The tool .difference() returns a set with all the elements from the set that are not in an iterable.
+Sometimes the - operator is used in place of the .difference() tool, but it only operates on the set of elements in set.
+Set is immutable to the .difference() operation (or the - operation).
+
+>>> s = set("Hacker")
+>>> print s.difference("Rank")
+set(['c', 'r', 'e', 'H'])
+
+>>> print s.difference(set(['R', 'a', 'n', 'k']))
+set(['c', 'r', 'e', 'H'])
+
+>>> print s.difference(['R', 'a', 'n', 'k'])
+set(['c', 'r', 'e', 'H'])
+
+>>> print s.difference(enumerate(['R', 'a', 'n', 'k']))
+set(['a', 'c', 'r', 'e', 'H', 'k'])
+
+>>> print s.difference({"Rank":1})
+set(['a', 'c', 'e', 'H', 'k', 'r'])
+
+>>> s - set("Rank")
+set(['H', 'c', 'r', 'e'])
+
+
+.symmetric_difference()
+
+The .symmetric_difference() operator returns a set with all the elements that are in the set and the iterable but not both.
+Sometimes, a ^ operator is used in place of the .symmetric_difference() tool, but it only operates on the set of elements in set.
+The set is immutable to the .symmetric_difference() operation (or ^ operation).
+
+>>> s = set("Hacker")
+>>> print s.symmetric_difference("Rank")
+set(['c', 'e', 'H', 'n', 'R', 'r'])
+
+>>> print s.symmetric_difference(set(['R', 'a', 'n', 'k']))
+set(['c', 'e', 'H', 'n', 'R', 'r'])
+
+>>> print s.symmetric_difference(['R', 'a', 'n', 'k'])
+set(['c', 'e', 'H', 'n', 'R', 'r'])
+
+>>> print s.symmetric_difference(enumerate(['R', 'a', 'n', 'k']))
+set(['a', 'c', 'e', 'H', (0, 'R'), 'r', (2, 'n'), 'k', (1, 'a'), (3, 'k')])
+
+>>> print s.symmetric_difference({"Rank":1})
+set(['a', 'c', 'e', 'H', 'k', 'Rank', 'r'])
+
+>>> s ^ set("Rank")
+set(['c', 'e', 'H', 'n', 'R', 'r'])
+
+
+We have seen the applications of union, intersection, difference and symmetric difference operations, but these operations do not make any changes or mutations to the set.
+
+We can use the following operations to create mutations to a set:
+
+.update() or |=
+Update the set by adding elements from an iterable/another set.
+
+>>> H = set("Hacker")
+>>> R = set("Rank")
+>>> H.update(R)
+>>> print H
+set(['a', 'c', 'e', 'H', 'k', 'n', 'r', 'R'])
+
+.intersection_update() or &=
+Update the set by keeping only the elements found in it and an iterable/another set.
+
+>>> H = set("Hacker")
+>>> R = set("Rank")
+>>> H.intersection_update(R)
+>>> print H
+set(['a', 'k'])
+
+.difference_update() or -=
+Update the set by removing elements found in an iterable/another set.
+
+>>> H = set("Hacker")
+>>> R = set("Rank")
+>>> H.difference_update(R)
+>>> print H
+set(['c', 'e', 'H', 'r'])
+
+.symmetric_difference_update() or ^=
+Update the set by only keeping the elements found in either set, but not in both.
+
+>>> H = set("Hacker")
+>>> R = set("Rank")
+>>> H.symmetric_difference_update(R)
+>>> print H
+set(['c', 'e', 'H', 'n', 'r', 'R'])
+
+---
+_ = input()
+a = set(int(x) for x in input().split(' '))
+
+n = int(input())
+for _ in range(n):
+    op, _ = input().split(' ')
+    b = set(int(x) for x in input().split(' '))
+    if op == "update":
+        a |= b
+    elif op == "intersection_update":
+        a &= b
+    elif op == "difference_update":
+        a -= b
+    elif op == "symmetric_difference_update":
+        a ^= b
+
+print(sum(a))
+---
+
+//////////////////
+/// Dictionary ///
+//////////////////
+
+objects in python called dictionary. it contains key, value
+-------------
+>>> dir(dict)
+['__class__', '__contains__', '__delattr__', '__delitem__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__getitem__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__iter__', '__le__', '__len__', '__lt__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__reversed__', '__setattr__', '__setitem__', '__sizeof__', '__str__', '__subclasshook__', 'clear', 'copy', 'fromkeys', 'get', 'items', 'keys', 'pop', 'popitem', 'setdefault', 'update', 'values']
+-------------
+
+Dictionary items are ordered, changeable, and does not allow duplicates.
+
+dictionaries are ordered, it means that the items have a defined order, 
+and that order will not change.
+
+Dictionaries are changeable, meaning that we can change, 
+add or remove items after the dictionary has been created.
+
+What built-in Python data type can be used as a hash table? dictionary
+
+Dictionaries cannot have two items with the same key:
+
+Duplicate values will overwrite existing values:
+---
+thisdict =	{
+  "brand": "Ford",
+  "model": "Mustang",
+  "year": 1964,
+  "year": 2020
+}
+print(thisdict) 
+
+-------------
+student_grades = {"Marry": 9.1, "Sim": 8.8, "John": 7.5}
+# gets all values from key-value dictionary and sum all of them together
+mysum = sum(student_grades.values())
+print(mysum / len(student_grades))
+-------------
+
+# this is a list:
+monday_temperature = [1, 4, 5]
+
+# and this is a tuple:
+monday_temperature = (1, 4, 5)
+
+-------
+monday_temperature = [1, 4, 5]
+monday_temperature2 = (1, 4, 5)
+print(monday_temperature)   # [1, 4, 5]
+print(monday_temperature2)  # (1, 4, 5)
+-------
+
+The difference between lists and tuples, is in syntax.
+lists are mutable
+tuples are imutable
+
+so we can add more items to a list like:
+-------
+monday_temperature = [1, 4, 5]
+monday_temperature.append(6)
+print(monday_temperature)   # [1, 4, 5, 6]
+monday_temperature.remove(4)
+print(monday_temperature)   # [1, 5, 6]
+-------
+but tuples doesn't have append() method or remove() method.
+
+Python defines a tuple using commas (,), not parentheses (). 
+For example, the following defines a tuple with two elements:
+1,2 
+
+Python uses the parentheses to make the tuple clearer:
+(1, 2)
+
+Python also uses the parentheses to create an empty tuple:
+()
+(1, )
+
+Note that the following is an integer, not a tuple:
+(1)
+
+////////////////////////////////////////////
+//////////  collections.Counter()   ////////
+////////////////////////////////////////////
+
+A counter is a container that stores elements as dictionary keys, and their counts are stored as dictionary values.
+
+Sample Code
+
+>>> from collections import Counter
+>>> 
+>>> myList = [1,1,2,3,4,5,3,2,3,4,2,1,2,3]
+>>> print Counter(myList)
+Counter({2: 4, 3: 4, 1: 3, 4: 2, 5: 1})
+>>>
+>>> print Counter(myList).items()
+[(1, 3), (2, 4), (3, 4), (4, 2), (5, 1)]
+>>> 
+>>> print Counter(myList).keys()
+[1, 2, 3, 4, 5]
+>>> 
+>>> print Counter(myList).values()
+[3, 4, 4, 2, 1]
+
+
+//////////////////////////
+///// namedtuple /////////
+//////////////////////////
+Python supports a type of container like dictionaries called “namedtuple()” present in the module, 
+“collections“. Like dictionaries, they contain keys that are hashed to a particular value. 
+But on contrary, it supports both access from key-value and iteration, the functionality that 
+dictionaries lack.
+
+Python’s namedtuple() is a factory function available in collections
+
+Besides this main feature of named tuples, you’ll find out that they:
+
+    Are immutable data structures
+    Have a consistent hash value
+    Can work as dictionary keys
+    Can be stored in sets
+    Have a helpful docstring based on the type and field names
+    Provide a helpful string representation that prints the tuple content in a name=value format
+    Support indexing
+    Provide additional methods and attributes, such as ._make(), _asdict(), ._fields, and so on
+    Are backward compatible with regular tuples
+    Have similar memory consumption to regular tuples
+
+What does calling namedtuple on a collection type return?
+ a tuple subclass with iterable named fields.
+
+---
+# namedtuple function accepts the following arguments to generate a class
+from collections import namedtuple
+>>> Point = namedtuple('Point',['x','y'])
+>>> point = Point(100, 200)
+>>> point
+    Point(x=100, y=200)
+
+# Which let you use both unpacking and iteration to access
+>>> x, y = point
+>>> print(f'({x}, {y})')
+    (100, 200)
+>>> for coordinate in point:
+        print(coordinate)
+    100
+    200
+---
+
+https://www.geeksforgeeks.org/namedtuple-in-python/?ref=lbp
+---
+
+//////////////////////////
+/// Unpacking a tuple  ///
+//////////////////////////
+
+Unpacking a tuple means splitting the tuple’s elements into individual variables. For example:
+x, y = (1, 2)
+
+The left side:
+x, y
+
+is a tuple of two variables x and y.
+
+The right side is also a tuple of two integers 1 and 2.
+
+.ex)
+x, y ,z = 10, 20, 30
+
+.ex)
+x, y = 10, 20, 30
+
+Error:
+ValueError: too many values to unpack (expected 2)
+
+to fix this, you can add a _ variable:
+x, y, _ = 10, 20, 30
+
+Extended unpacking using the * operator:
+
+r, g, *other = (192, 210, 100, 0.5)
+
+Output:
+
+192
+210
+[100, 0.5]
+--------
+
+.ex)
+x, y, *z, *t = (10, 20, 30, '10:30')
+
+Error:
+SyntaxError: two starred expressions in assignment
+
+----------------------------------------------------
+
+////////////////////////////////////////////////////
+////////////   _  operator     /////////////////////
+////////////////////////////////////////////////////
+It’s generally an indication that you don’t care about the current value of the variable.
+
+For example, you might have:
+
+    for i in range (1, 11): 
+        print(i) 
+
+In the case above, we clearly want to use i in our code.
+
+However, in the following case:
+
+    for i in range (1, 11): 
+      print(“Hello”) 
+
+The i is not used. We indicate this by using _ instead:
+
+    for _ in range (1, 11): 
+      print(“Hello”) 
+
+This is not required; it is just idiomatic. It is also useful while debugging, as you know that you didn’t use _ anywhere in the loop.
+
+While this:
+
+    for _ in range (1, 11): 
+        print(_) 
+
+///////////////////////////////////////////////////
+///////////////////////////////////////////////////
+///////////////////////////////////////////////////
+
+Note:
+Instead of while() you can use for :
+---
+i = 0
+While (i < n):
+    i += 1
+    ...
+---
+for i in range(1, n):
+    ...
+
+////////////////////////////////////////////////////
+/// Using the * operator on the right hand side  ///
+////////////////////////////////////////////////////
+
+odd_numbers = (1, 3, 5)
+even_numbers = (2, 4, 6)
+
+numbers = (*odd_numbers, *even_numbers)
+print(numbers)
+
+Output:
+(1, 3, 5, 2, 4, 6)
+
+--------
+the methods that starts and ends with underscores, like:
+__add__ or __class__, they all used internally in python. we should look for methods without them.
+-----------------
+>>> dir(list)
+'append', 'clear', 'copy', 'count', 'extend', 'index', 'insert', 'pop', 'remove', 'reverse', 'sort'
+-----------------
+
+if we want to know that how a method works:
+-----
+>>> help(list.append)
+append(self, object, /)
+    Append object to the end of the list.
+-----
+so:
+-----
+monday_temperature = [1, 4, 5]
+monday_temperature.append(6)    # [1, 4, 5, 6]
+-----
+
+NOTE: we always ignore 'self'.
+-----
+>>> help(list.clear)
+clear(self, /)
+    Remove all items from list.
+-----
+monday_temperature.clear()  # []
+-----
+
+>>> help(list.index)
+index(self, value, start=0, stop=9223372036854775807, /)
+    Return first index of value.
+    
+    Raises ValueError if the value is not present.
+-----
+>>> monday_temperature.index(5)
+2
+-----
+or ignore first cell:
+-----
+>>> monday_temperature.index(5,1)
+2
+-----
+
+*****************
+we can get a range of a list by [:] syntax:
+------
+monday_temperature = [1, 4, 5, 6, 7, 8]
+print(monday_temperature[1:4])  # [4, 5, 6]
+------
+
+or we can get everything from the start untill a point.
+------
+>>> monday_temperature[:4]
+[1, 4, 5, 6]
+------
+
+or get everything from a point to the end
+------
+>>> monday_temperature[4:]
+[7, 8]
+------
+
+get the last cell of the list
+------
+>>> monday_temperature[-1]
+8
+------
+
+or get a cell value starting from the end
+------
+>>> monday_temperature[-3]
+6
+------
+
+get just 3 last items:
+------
+>>> monday_temperature[-3:]
+[6, 7, 8]
+------
+
+get a range using negative values:
+------
+>>> monday_temperature[-4:-2]           ***
+[5, 6]
+------
+
+take the characters of a string
+------
+>>> mystring="hello"
+>>> mystring[0]
+'h'
+>>> mystring[-1]
+'o'
+>>> mystring[:3]
+'hel'
+------
+
+alphabet = "abcdefghijklmnopqrstuvwxyz"
+list(alphabet[0::2]) 
+list(alphabet[1::2]) 
+list(alphabet[0::3]) 
+------
+['a', 'c', 'e', 'g', 'i', 'k', 'm', 'o', 'q', 's', 'u', 'w', 'y']
+['b', 'd', 'f', 'h', 'j', 'l', 'n', 'p', 'r', 't', 'v', 'x', 'z']
+['a', 'd', 'g', 'j', 'm', 'p', 's', 'v', 'y']
+------
+
+get values of an object:
+------
+>>> student_grades = {"Marry": 9.1, "Sim": 8.8, "John": 7.5}
+>>> student_grades["Sim"]
+8.8
+------
+
+In Python, a string can be split on a delimiter.
+
+Example:
+
+>>> a = "this is a string"
+>>> a = a.split(" ") # a is converted to a list of strings. 
+>>> print a
+['this', 'is', 'a', 'string']
+
+Joining a string is simple:
+
+>>> a = "-".join(a)
+>>> print a
+this-is-a-string 
+
+
+************************
+Functions
+************************
+
+to define a function, we use 'def sth():'
+------
+def mean(mylist):
+    the_mean = sum(mylist) / len(mylist)
+    return the_mean
+
+print(mean([1, 4, 6]))      # 3.6666666666666665
+print(type(mean))           # <class 'function'>
+------
+
+*** NOTE ***
+---
+Which is the proper way to define a function?
+ def getMaxNum(list_of_nums): # body of function goes here
+ OR
+ def get_max_num(list_of_nums): # body of function goes here
+
+ the second one is correct !!!
+---
+
+*** NOTE ***
+---
+how should constant values be named in Python?
+1) maxValue = 255
+2) max_value = 255
+3) MAX_VALUE = 255
+4) MaxValue = 255
+
+the answer is 3) MAX_VALUE = 255
+---
+*****************
+None
+*****************
+
+when your function doesn't have a returned statement, it returns 'None' object.
+None means nothing. so even if a function doesn't need to return anything,
+it can return None 
+--------
+def mean(mylist):
+    the_mean = sum(mylist) / len(mylist)
+    return None
+--------
+
+Python always tries to find a returned statement.
+if you just print sth and not return anything, it will also print None.
+--------
+def mean(mylist):
+    the_mean = sum(mylist) / len(mylist)
+    print(the_mean)
+
+print(mean([1, 4, 6]))
+--------
+% python basics.py
+3.6666666666666665
+None
+--------
+
+so if we want to calculate the average of a list and then
+sum that number with another number, and we forget to return the value, we have:
+--------
+def mean(mylist):
+    the_mean = sum(mylist) / len(mylist)
+    print(the_mean)
+
+myMean = mean([1, 4, 6])
+print(myMean + 10)
+--------
+it gives us error:
+--------
+Traceback (most recent call last):
+  File "basics.py", line 9, in <module>
+    print(myMean + 10)
+--------
+
+because it can't add a number with None
+
+we want to create a function that if it takes a list, it detects that
+and returns the average, and if it takes a dictionary, it also detect that
+and returns the average.
+--------
+def mean(value):
+    if type(value) == dict:
+        the_mean = sum(value.values()) / len(value)
+    else:
+        the_mean = sum(value) / len(value)
+    return the_mean
+
+
+myDict = {"Marry": 9.1, "Sim": 8.8, "John": 7.5}
+mylist = [1, 4, 6]
+print(mean(myDict))
+print(mean(mylist))
+--------
+
+*******************
+else if == elif
+*******************
+x = 3
+y = 3
+if x > y:
+    print("x is greater")
+elif x == y:
+    print("x and y are equal")
+elif x < y:
+    print("y is greater")
+----------------------
+
+**************************
+input()
+**************************
+How to get value from user? with input() function
+it takes an argument that is the message we want to show to the user in command line.
+once we run the program, the program will be freezed when it reaches the input() function
+and it waits for user input.
+so the lines after input() won't get executed.
+
+*** Note: whatever the user inserts as input, Python will transfer it into string!!!
+
+so we should convert the user input to number if we expect the number.
+by int() or float()
+------------------
+def weather_condition(temperature):
+    if temperature > 7:
+        return "warm"
+    else:
+        return "cold"
+
+userInput = int(input("Enter the Tempreture: "))
+print(weather_condition(userInput))
+------------------
+
+************************
+String formatting
+************************
+how to use varriables in a string?
+-----------------
+user_input = input("Your name? ")
+print("hello %s!" % user_input)
+-----------------
+
+so we used '%s' that represents as string. then after string, we should 
+bring another % and then the variables.
+
+in newer python version, there is a better syntax.
+just add prefix 'f' before the qoutes and use variables inside {}.
+-----------------
+name = input("Your name? ")
+surname = input("Your surname? ")
+print("hello %s %s!" % (name, surname))
+print(f"hello {name} {surname}!")
+-----------------
+another way is to use .format() 
+-----------------
+txt = "how are you"
+print("{}?".format(txt))
+-----------------
+
+*****************
+for loops
+*****************
+
+round an array:
+----------------
+monday_temperatures = [9.1, 8.8, 7.6]
+for item in monday_temperatures:
+    print(round(item))
+----------------
+
+print all characters:
+----------------
+for item in "Hello":
+    print(item)
+----------------
+
+iterate in object:
+----------------
+student_grades = {"Marry": 9.1, "Sim": 8.8, "John": 7.5}
+
+for item in student_grades.values():
+    print(round(item))
+----------------
+% python basics.py
+9
+9
+8
+----------------
+for item in student_grades.items():
+    print(round(item))
+----------------
+% python basics.py
+('Marry', 9.1)
+('Sim', 8.8)
+('John', 7.5)
+----------------
+
+iterating in 2 or more arrays at a same time, by using zip():
+----------------
+for i, j in zip([1,2,3], [4,5,6]):
+    print(i, "and", j)
+
+output:
+1 and 4
+2 and 5
+3 and 6
+
+----------------
+*********************
+While
+*********************
+----------------------
+a = 0
+while a < 10:
+    print("uff")
+    a += 1
+----------------------
+
+enter username until it's correct:
+----------------------
+username = ""
+while username != "pypy":
+    username = input("Enter username: ")
+----------------------
+OR
+----------------------
+while True:
+    username = input("Enter username: ")
+    if username == "pypy":
+        break
+    else:
+        continue
+
+----------------------
+% python basics.py
+Enter username: ss
+Enter username: ad
+Enter username: pypy
+----------------------
+
+.startswith() method takes the first word and check with given tuple as arguments:
+----------------------
+"how are you".startswith(("how", "what", "when"))   # returns True
+----------------------
+
+.capitalize() makes the first character of a string, capitalized.
+----------------------
+"hi there".capitalize()     # returns "Hi there"
+----------------------
+
+.join()
+to add strings of a list to each other, we can use .join()
+----------------------
+list = ["hi there", "how are you"]
+txt1 = " ".join(list)
+txt2 = "-".join(list)
+print(txt1)      # returns "hi there how are you"
+print(txt2)      # returns "hi there-how are you"
+----------------------
+
+Example)
+--------------------------------------------
+def ConvertInput():
+    user_input = ""
+    inputs = []
+    while user_input != "\end":
+        user_input = input("Say something: ")
+        if user_input == "\end":
+            break
+        words = user_input.split()
+        firstWord = words[0].lower()
+        if firstWord == 'what' or firstWord == 'where' or firstWord == 'how' or firstWord == 'when' or firstWord == 'why':
+            user_input = user_input + "?"
+        else:
+            user_input = user_input + "."
+        inputs.append(user_input)
+    return inputs
+
+
+def justifyStr(inputs):
+    str = ""
+    for item in inputs:
+        str = str + " " + item
+    return str
+
+
+inputs = ConvertInput()
+string = justifyStr(inputs)
+print(string)
+--------------------------------------------
+
+***
+Important:
+Note:
+*****************************
+inline for loop in lists
+*****************************
+
+let's say we want to iterate the array and divide all numbers by 10.
+
+one approach is:
+-----------------
+temps = [221, 234, 340, 230]
+
+new_temps = []
+for temp in temps:
+    new_temps.append(temp / 10)
+
+print(new_temps)
+-----------------
+
+the better approach is:
+-----------------
+temps = [221, 234, 340, 230]
+
+print([temp / 10 for temp in temps])
+
+# returns [22.1, 23.4, 34.0, 23.0]
+-----------------
+
+it basically divides a "temp" by 10. but "temp" is not identified
+but after that, we brought an in-line for loop which shows that temp is 
+an item of temps. and it iterates into temps.
+
+suppose we had these data:
+temps = [221, 234, 340, -9999, 230]
+
+and we didn't want to iterate the '-9999' item. we can use inline if condition
+-----------------
+temps = [221, 234, 340, -9999, 230]
+
+print([temp / 10 for temp in temps if temp != -9999])
+
+# returns [22.1, 23.4, 34.0, 23.0]
+-----------------
+
+imagine we wanted to replace -9999 with 0:
+-----------------
+temps = [221, 234, 340, -9999, 230]
+
+print([temp / 10 if temp != -9999 else 0 for temp in temps])
+
+# returns [22.1, 23.4, 34.0, 0, 23.0]
+-----------------
+
+so we brought the inline if-else conditions first and then the for loop.
+it means:
+divide temp by 10, if it was not -9999. but if it was -9999, replace it with 0
+and what is 'temp'? the 'temp' is an item of temps (this represented in for loop.)
+
+------------------
+
+N, M = map(int, input().split())
+# range (1, N, 2) means it start with i=1 and the steps will be 2
+for i in range(1, N, 2):
+    print(str('.|.' * i).center(M, '-'))
+# Write "---Welcome---" with the width of M
+print('WELCOME'.center(M, '-'))
+for i in range(N-2, -1, -2):
+    print(str('.|.' * i).center(M, '-'))
+
+------------------
+Result:
+---
+Input (stdin)
+
+    7 21
+
+Your Output (stdout)
+
+    ---------.|.---------
+
+    ------.|..|..|.------
+
+    ---.|..|..|..|..|.---
+
+    -------WELCOME-------
+
+    ---.|..|..|..|..|.---
+
+    ------.|..|..|.------
+
+    ---------.|.---------
+------------------
+
+//////////////
+//// all() ///
+//////////////
+
+The all() function returns True if all items in the list evaluate to True. Otherwise, it returns False.
+
+---
+test = [True,False,False,False]
+if all(test) is True:
+    print('Yeah all are True')
+else:
+    print('There is an imposter')
+>>> 'There is an imposter'
+
+---
+
+////////////////////
+//// enumerate() ///
+////////////////////
+
+In Python, a for loop is usually written as a loop over an iterable object. 
+This means you don’t need a counting variable to access items in the iterable. 
+Sometimes, though, you do want to have a variable that changes on each loop iteration. 
+Rather than creating and incrementing a variable yourself, you can use Python’s enumerate() 
+to get a counter and the value from the iterable at the same time!
+
+---
+https://realpython.com/python-enumerate/
+---
+
+>>> for count, value in enumerate(values):
+...     print(count, value)
+...
+0 a
+1 b
+2 c
+
+When you use enumerate(), the function gives you back two loop variables:
+
+    The count of the current iteration
+    The value of the item at the current iteration
+---
+>>> for count, value in enumerate(values, start=1):
+...     print(count, value)
+...
+1 a
+2 b
+3 c
+---
+
+def check_whitespace(lines):
+
+    """Check for whitespace and line length issues."""
+
+    for lno, line in enumerate(lines):
+
+        if "\r" in line:
+
+            yield lno+1, "\\r in line"
+
+        if "\t" in line:
+
+            yield lno+1, "OMG TABS!!!1"
+
+        if line[:-1].rstrip(" \t") != line[:-1]:
+
+            yield lno+1, "trailing whitespace"
+
+---
+>>> users = ["Test User", "Real User 1", "Real User 2"]
+>>> for index, user in enumerate(users):
+...     if index == 0:
+...         print("Extra verbose output for:", user)
+...     print(user)
+...
+Extra verbose output for: Test User
+Real User 1
+Real User 2
+
+---
+>>> def even_items(iterable):
+...     """Return items from ``iterable`` when their index is even."""
+...     values = []
+...     for index, value in enumerate(iterable, start=1):
+...         if not index % 2:
+...             values.append(value)
+...     return values
+
+
+>>> seq = list(range(1, 11))
+
+>>> print(seq)
+[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+>>> even_items(seq)
+[2, 4, 6, 8, 10]
+
+>>> alphabet = "abcdefghijklmnopqrstuvwxyz"
+
+>>> even_items(alphabet)
+['b', 'd', 'f', 'h', 'j', 'l', 'n', 'p', 'r', 't', 'v', 'x', 'z']
+
+>>> list(alphabet[1::2])
+['b', 'd', 'f', 'h', 'j', 'l', 'n', 'p', 'r', 't', 'v', 'x', 'z']
+
+---
+college_years = ['Freshman', 'Sophomore', 'Junior', 'Senior']
+return list(enumerate(college_years, 2019))
+
+// [(2019, 'Freshman'), (2020, 'Sophomore'), (2021, 'Junior'), (2022, 'Senior')]
+---
+
+
+//////////////////
+//// range()  ////
+//////////////////
+
+The range() function returns a sequence of numbers.
+Note: range() returns an immutable sequence of numbers that can be easily converted to lists, tuples, sets etc.
+
+-----------
+# create a sequence of numbers from 0 to 5
+numbers = range(6)
+
+# converting to a list
+numbers_list = list(numbers)
+
+print(numbers_list)
+# Output: [0, 1, 2, 3, 4, 5]
+-----------
+Syntax of range():
+range(start, stop, step)
+
+The start and step parameters in range() are optional.
+range() with Two Arguments: start and stop
+
+range(2, 5)         // [2, 3, 4]
+range(-2, 4)        // [-2, -1, 0, 1, 2]
+range(4, 2)         // []
+
+range() with Three Arguments: start and stop and step
+
+range(2, 10, 3)     // [2, 5, 8]
+range(4, -1, -1)    // [4, 3, 2, 1, 0]
+range(0, 5, 1)      // [0, 1, 2, 3, 4]
+
+***
+The range() function is commonly used in a for loop to iterate the loop a certain number of times.
+
+# iterate the loop 5 times
+---
+for i in range(5):
+    print(i, 'Hello')
+---
+for index in range(len(values)):
+    value = values[index]
+    print(index, value)
+---
+
+///////////////
+//// any()  ///
+///////////////
+
+Python any() function returns True if any of the elements of a given iterable( List, 
+Dictionary, Tuple, set, etc) are True else it returns False. 
+
+# All elements of list are true
+l = [ 4, 5, 1]
+print(any( l ))                     // True
+ 
+# All elements of list are false
+l = [ 0, 0, False]
+print(any( l ))                     // False
+ 
+# Some elements of list are
+# true while others are false
+l = [ 1, 0, 6, 7, False]
+print(any( l ))                     // True
+ 
+# Empty List
+l = []
+print(any( l ))                     // False
+
+---
+test_list = [4, 5, 8, 9, 10, 17]
+ 
+# Check if any element in list satisfies a condition
+# Using any()
+res = any(ele > 10 for ele in test_list)
+
+// Does any element satisfy specified condition ? : True
+---
+
+*************************
+Kyewords arguments and Non-Kyewords arguments
+*************************
+
+Non-Kyewords arguments or positional arguments:
+-------
+def area(a, b):
+    return a * b
+
+print(area(4, 5))
+-------
+we called them positional arguments, because the position matters.
+
+Kyewords arguments:
+-------
+def area(a, b):
+    return a * b
+
+print(area(b = 4, a = 5))
+-------
+in Kyewords arguments, position doesn't matter.
+
+*************************
+default value:
+*************************
+
+an argument might have a default value:
+-------------
+def area(a, b = 5):
+    return a * b
+
+print(area(4))              # 20
+print(area(a = 4))          # 20
+print(area(a = 4, b = 7))   # 35
+-------------
+
+4, will be replaced with a and b has default value of 5
+
+*************************
+Functions with specific number of arguments:
+*************************
+
+1. pass as many arguments as we want:
+-------------
+def mean(*args):
+    print(args)
+
+mean(1, 2, 'a', 4, 5)     # returns a tuple: (1, 2, 'a', 4, 5)
+-------------
+
+it doesn't have to be 'args' but this name is common.
+here we cannot use Kyewords arguments.
+-------------
+mean(1, 2, x = 3, 4, 5)     # doesn't work.
+-------------
+
+2. we want to require using Kyewords arguments:
+-------------
+def mean(**kwargs):
+    return kwargs
+
+print(mean(1, 2, 3))
+-------------
+returns: TypeError: mean() takes 0 positional arguments but 3 were given
+-------------
+def mean(**kwargs):
+    return kwargs
+
+print(mean(a=1, b=2, c=3))
+-------------
+returns: {'a': 1, 'b': 2, 'c': 3}
+----------------------------------------------------
+
+Proccessing a file:
+
+reading a file:
+we should store the file object into a variable.
+the open() function is what creates file objects.
+the input to open() method is a path to this file.
+then we can use '.read()' to read a file
+----------------------------------------------------
+myfile = open("fruit.txt")
+print(myfile.read())
+----------------------------------------------------
+
+when we apply the '.read()' method, the compiler goes through the file,
+line by line. and reaches the last line of the file.
+if we call 'read()' again, the output won't be repeated. it will be an empty space!
+----------------------------------------------------
+myfile = open("fruit.txt")
+print(myfile.read())
+print(myfile.read())
+----------------------------------------------------
+output:
+---
+pear
+apple
+orange
+mandarin
+watermelon
+pomegranate
+
+---
+
+because the cursor reached the end once, and after that, there is no
+other lines.
+if you want to print it many times, we should store the file data in a variable.
+----------------------------------------------------
+
+when we create a file object using open() method, this file will be 
+created in RAM. and it's going to remain there, untill the execution of
+the program ends.
+in order to close the file and delete it from memory, (when we're done with proccessing file)
+we should use .close()
+----------------------------------------------------
+myfile = open("fruit.txt")
+content = myfile.read()
+myfile.close()
+print(content)
+----------------------------------------------------
+
+if we try to read() the myfile again, it gets error:
+----------------------------------------------------
+ValueError: I/O operation on closed file.
+----------------------------------------------------
+********************
+with as
+********************
+A better way to open and close a file, is using "with -- as --"
+----------------------------------------------------
+with open("./fruit.txt") as myFile:
+    content = myFile.read()
+    print(content)
+----------------------------------------------------
+but we should do everything under the 'with' parameter. 
+so the close() method is not required here.
+
+Till now, we used open() default values and we just passed the path to the file.
+---------------------- 
+>>> help(open)
+open(file, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None)
+========= ===============================================================
+Character Meaning
+--------- ---------------------------------------------------------------
+'r'       open for reading (default)
+'w'       open for writing, truncating the file first
+'x'       create a new file and open it for writing
+'a'       open for writing, appending to the end of the file if it exists
+'b'       binary mode
+'t'       text mode (default)
+'+'       open a disk file for updating (reading and writing)
+'U'       universal newline mode (deprecated)
+*** NOTE ***
+*** To update and read a file at the same time, use 'a+'
+========= ===============================================================
+the default value for mode, is 'read'
+for writing, we use 'w'
+----------------------------------------------------
+with open("./vegtables.txt","w") as myFile:
+    myFile.write("Tomato")
+----------------------------------------------------
+so the vegtables.txt will be created and the content "Tomato" will be written over there.
+
+in order to create more lines, we use "\n"
+----------------------------------------------------
+with open("./vegtables.txt","w") as myFile:
+    myFile.write("Tomato\nCucumber")
+----------------------------------------------------
+
+for appending content after existing content in a file:
+----------------------------------------------------
+with open("./vegtables.txt", "a") as myFile:
+    myFile.write("\nTomato\nCucumber")
+    content = myFile.read()
+
+print(content)
+----------------------------------------------------
+gives us error, because myFile is not readable:
+---
+io.UnsupportedOperation: not readable
+---
+
+*** NOTE ***
+*** To update and read a file at the same time, use 'a+'
+----------------------------------------------------
+with open("./vegtables.txt", "a+") as myFile:
+    myFile.write("\nTomato\nCucumber")
+    content = myFile.read()
+
+print(content)
+----------------------------------------------------
+
+*** Note ***
+this will print empty string. because when we write in a file, the cursor goes to the end
+and if we read then, there is nothing to be read at the end of the page.
+
+in order to put the cursor at the first position, use seek(0)
+----------------------------------------------------
+with open("./vegtables.txt", "a+") as myFile:
+    myFile.write("\nTomato\nCucumber")
+    myFile.seek(0)
+    content = myFile.read()
+
+print(content)
+----------------------------------------------------
+
+there is no method for making the code slept. unlike setTimeout() in Js.
+that's why we should use built-in modules. 
+to see all builtin module names, write:
+----------------------------------------------------
+>>> import sys
+>>> sys.builtin_module_names
+('_abc', '_ast', '_codecs', '_collections', '_functools', '_imp', '_io', '_locale', '_operator', '_signal', '_sre', '_stat', '_string', '_symtable', '_thread', '_tracemalloc', '_warnings', '_weakref', 'atexit', 'builtins', 'errno', 'faulthandler', 'gc', 'itertools', 'marshal', 'posix', 'pwd', 'sys', 'time', 'xxsubtype')
+----------------------------------------------------
+
+we see that a module named 'time' exists.
+so we should import it in order to use it.
+----------------------------------------------------
+>>> import time
+>>> dir(time)
+['_STRUCT_TM_ITEMS', '__doc__', '__loader__', '__name__', '__package__', '__spec__', 'altzone', 'asctime', 'ctime', 'daylight', 'get_clock_info', 'gmtime', 'localtime', 'mktime', 'monotonic', 'monotonic_ns', 'perf_counter', 'perf_counter_ns', 'process_time', 'process_time_ns', 'sleep', 'strftime', 'strptime', 'struct_time', 'time', 'time_ns', 'timezone', 'tzname', 'tzset']
+----------------------------------------------------
+
+here we see that we have sleep method.
+----------------------------------------------------
+>>> help(time.sleep)
+sleep(...)
+    sleep(seconds)
+    
+    Delay execution for a given number of seconds.  The argument may be
+    a floating point number for subsecond precision.
+----------------------------------------------------
+
+read every 10 seconds from a file and print its data
+----------------------------------------------------
+import time
+while True:
+    with open("./vegtables.txt", "r") as myFile:
+        print(myFile.read())
+        time.sleep(10)
+----------------------------------------------------
+
+imagine a time that there is no file directory in the folders to read form it,
+so the compile gives us an error. but if we want to still execute code when we don't have existing file,
+we should import 'os'
+
+'os' is not a built-in module, it's an extra file, named os, coming with new python version.
+but we can still access its methods.
+----------------------------------------------------
+>>> dir(os)
+----------------------------------------------------
+
+for example, it checks if a file exists:
+----------------------------------------------------
+>>> os.path.exists("./fruit.txt")
+True
+----------------------------------------------------
+
+the difference between 'time' and 'os' is that time is written by C language
+and os is written by Python
+
+
+***************************
+*** Third Party Modules ***
+***************************
+
+we can install third party libraries with 'pip'
+'pip' is another library that comes by default with python.
+if you're using python 3.8 ,  you should use 'pip3.8'
+----------------------------------
+% pip3 install pandas
+----------------------------------
+
+but where that 'pandas' is?
+----------------------------------
+% python3
+>>> import sys
+>>> sys.prefix
+'/Users/username/opt/anaconda3'
+----------------------------------
+in terminal in mac, write: 
+---
+$ open /Users/username/opt/anaconda3
+---
+as we see, pandas is a bunch of modules, that named 'Package'
+
+*** When we have several modules, we call them a Package
+but we can use it as before.
+--------------------------------------------------------
+import os
+import time
+import pandas
+
+while True:
+    if os.path.exists("./087 temps-today.csv"):
+        data = pandas.read_csv("./087 temps-today.csv")
+        print(data.mean())
+    else:
+        print("file does not exist")
+    time.sleep(10)
+--------------------------------------------------------
+output:
+-------
+st1    22.125
+st2    20.550
+dtype: float64
+--------------------------------------------------------
+
+to get the mean (or average) of jus 'st1', we have
+-------
+data = pandas.read_csv("./087 temps-today.csv")
+print(data.mean()["st1"])
+-------
+
+once we execute the 'pandas.read_csv()', an object named 'DataFrame'
+will get executed. which is a unique data-type
+
+=======================================
+======== Dictionary Project ===========
+=======================================
+
+suppose we have a data file containing the definition of all words.
+in order intract with that json file, we need to import standard 'json' library.
+---
+>>> import json
+>>> help(json.load)
+load(fp, *, cls=None, object_hook=None, parse_float=None, parse_int=None, parse_constant=None, object_pairs_hook=None, **kw)
+---
+
+the 'fp' means a file like object.
+we should open and load the file using 'json.load(open(path))'
+---------------------
+>>> import json
+>>> data = json.load(open("./091 data.json"))
+>>> type(data)
+<class 'dict'>
+---------------------
+
+now to access a word, because it's key-value object,
+we should search for "key" and get the value (which is an array of the word's definition.)
+---------------------
+>>> data["rain"]
+['Precipitation in the form of liquid water drops with diameters greater than 0.5 millimetres.',
+ 'To fall from the clouds in drops of water.']
+---------------------
+
+***************************
+****   Important   ********
+***************************
+
+there is a syntax that helps us to check if a key exists in an object (Dict) or not.
+use:  "sth" in object
+----------------------------
+>>> "rain" in data
+True
+>>> "adasda" in data
+False
+----------------------------
+
+
+**************************************************
+*** finding similarity ratio between 2 strings ***
+**************************************************
+we can use difflib and a method from that to calculate ratio between 2 specific words
+-----------------------
+>>> import difflib
+>>> from difflib import SequenceMatcher
+>>> SequenceMatcher(None, "rainn", "rain").ratio()
+0.8888888888888888
+-----------------------
+
+but we can't compare a word to all words.
+that's why we use get_close_matches:
+-----------------------
+>>> from difflib import get_close_matches
+>>> help(difflib.get_close_matches)
+get_close_matches(word, possibilities, n=3, cutoff=0.6)
+-----------------------
+the 'word' is our input.
+the 'possibilities' is suggested words
+'n' is number of suggested words
+"cutoff = 0.6" means that it only returns ratios that at least 0.6 or more than that.
+-----------------------
+>>> difflib.get_close_matches("rainn", ["help", "pyramid", "rain"])
+['rain']
+-----------------------
+
+so we just need to pass 'data.keys' to 'get_close_matches()'
+-----------------------
+>>> difflib.get_close_matches("rainn", data.keys(), n = 5)
+['rain', 'train', 'rainy', 'grain', 'drain']
+-----------------------
+
+the dictionary code:
+----------------------------------------------------------
+import json
+import difflib
+from difflib import get_close_matches
+
+word = input("type a word: ")
+word = word.lower()
+data = json.load(open("./091 data.json"))
+
+def translate(word):
+    if word in data:
+        return data[word]
+    else:
+        raito = difflib.get_close_matches(word, data.keys(), n=1)
+        if raito:
+            answer = input(f"did you mean {raito[0]}? ").lower()
+            if answer == "y":
+                word = raito[0]
+                return data[word]
+            else:
+                return "not valid word"
+        else:
+            return "not valid word"
+
+definition = translate(word)
+print(definition)
+----------------------------------------------------------
+
+***********************************
+** Connectiong to mySQL database **
+***********************************
+
+install the connector:
+---
+% pip3 install mysql-connector-python
+---
+
+-------------------------------------
+# then in order to connect:
+
+import mysql.connector
+
+con = mysql.connector.connect(
+    user="ardit700_student",
+    password="ardit700_student",
+    host="108.167.140.122",
+    database="ardit700_pm1database"
+)
+
+# in order to query some data:
+# use the cursor object to navigate through the table of the database.
+cursor = con.cursor()
+
+word = input("Enter a word: ")
+# query = cursor.execute("SELECT * FROM Dictionary")
+# or
+query = cursor.execute("SELECT * FROM Dictionary WHERE Expression = 'inlay'")
+results = cursor.fetchall()
+
+if results:
+    for result in results:
+        print(results[1])
+else:
+    print("no word found!")
+
+-------------------------------------
+
+**********************************
+*****  DataFrame structure  ******
+**********************************
+
+create a DataFrame:
+------------------------------
+import pandas
+
+df1 = pandas.DataFrame([[2, 4, 6], [10, 20, 30]])
+# DataFrame structure:
+#     0   1   2
+# 0   2   4   6
+# 1  10  20  30
+
+df1 = pandas.DataFrame([[2, 4, 6], [10, 20, 30]],
+                       columns=["Price", "Age", "Value"])
+print(df1)
+#    Price  Age  Value
+# 0      2    4      6
+# 1     10   20     30
+
+df1 = pandas.DataFrame([[2, 4, 6], [10, 20, 30]],
+                       columns=["Price", "Age", "Value"], index=["First", "Second"])
+print(df1)
+#         Price  Age  Value
+# First       2    4      6
+# Second     10   20     30
+
+------------------------------
+
+pass 2 dictionaries into a DataFrame:
+------------------------------
+df2 = pandas.DataFrame(
+    [{"Name": "John", "Surname": "Johns"}, {"Name": "Jack"}])
+print(df2)
+#    Name Surname
+# 0  John   Johns
+# 1  Jack     NaN
+------------------------------
+
+>>> dir(df1)
+----------------
+it will show us all the methods we can use for data analyzing.
+for instance, we can use the mean() method on df1 to get the average of every columns.
+----------------
+>>> df1.mean()
+Price     6.0
+Age      12.0
+Value    18.0
+dtype: float64
+----------------
+
+and if we want to get the mean of entire values:
+----------------
+>>> df1.mean().mean()
+12.0
+----------------
+
+>>> df1.Price.max()
+10
+----------------
+
+Jupyter is a browser editor for languages like python and R.
+===============================
+    https://jupyter.org/
+===============================
+install it via:
+$ pip install jupyter
+---
+
+then, we can write this line to open jupyter in localhost.
+$ jupyter notebook
+
+and in the folder that we have ran this command, any changes will be saved.
+-------------
+Key shortcuts:
+Enter,
+Ctrl+Enter
+Alt+Enter
+press 2 times 'd' like: dd to delete a cell.
+-------------
+
+Jupyter is PERFECT for analyzing data and see the changes and demonestration,
+at real time.
+
+************************
+**** Data Analysis *****
+************************
+
+suppose that we have same data in 5 files with different format.
+------------------------
+>>> import os
+>>> os.listdir()
+
+['Untitled.ipynb',
+ 'supermarkets.json',
+ 'supermarkets.csv',
+ 'supermarkets-semi-colons.txt',
+ 'supermarkets.xlsx',
+ 'app.py',
+ '.ipynb_checkpoints',
+ 'supermarkets-commas.txt']
+------------------------
+
+CSV files:
+---
+df1=pandas.read_csv("supermarkets.csv")
+df1
+---
+
+json files:
+---
+df2=pandas.read_json("supermarkets.json")
+df2
+
+excel file: we need to insert an index as sheet_name too.
+---
+df2=pandas.read_excel("supermarkets.xlsx", sheet_name=0)
+df2
+---
+
+for txt file: again we use read_csv
+---
+df1=pandas.read_csv("supermarkets-commas.txt")
+df1
+---
+
+if the txt file data was seperated by ';' rather than ','
+we should specify the seperator:
+---
+df1=pandas.read_csv("supermarkets-semi-colons.txt",sep=";")
+df1
+---
+
+in order to get help for a single method, use '?'
+---
+pandas.read_csv?
+---
+
+the pandas, will take the first line of data as the header of the table.
+consider this data:
+---------------------------------------------------------------------------------
+ 	ID 	Address 	        City 	        State 	            Country 	Name 	        Employees
+0 	1 	3666 21st St 	    San Francisco 	CA 94114 	        USA 	    Madeira 	    8
+1 	2 	735 Dolores St 	    San Francisco 	CA 94119 	        USA 	    Bready Shop 	15
+2 	3 	332 Hill St 	    San Francisco 	California 94114 	USA 	    Super River 	25
+3 	4 	3995 23rd St 	    San Francisco 	CA 94114 	        USA 	    Ben's Shop 	    10
+4 	5 	1056 Sanchez St 	San Francisco 	California 	        USA 	    Sanchez 	    12
+5 	6 	551 Alvarado St 	San Francisco 	CA 94114 	        USA 	    Richvalley 	    20
+---------------------------------------------------------------------------------
+
+so the line 'ID,Address,City,State,Country,Name,Employees'
+will be the headers of the table.
+
+but what if the data didn't have a table?
+pandas still takes the first line as header, unless we tell it not to do.
+---
+df1=pandas.read_csv("supermarkets.csv", header = None)
+df1
+---
+so the headers will be numbers, starting from 0
+
+*** in order to define headers for each column, we can write:
+---
+df3=pandas.read_csv("supermarkets-commas.txt",header=None)
+df3.columns=["ID","Address","City","State","Country","Name","Employees"]
+df3
+---
+
+by default, pandas, will add indexes to our table. 
+but if we want to set the existing 'ID' as indexes, we have:
+---
+df3 = df3.set_index("ID")
+
+OR
+
+df3.set_index("ID", inplace=True)
+---
+
+the 'set_index()' method will create a new DataFrame. 
+so if we replace our old DataFrame with new one, like:
+---
+df3 = df3.set_index("ID")
+---
+the old one will be deleted.
+
+to avoid that (deleting the column that is considered as index)
+we can use 'drop=False'
+---
+df3.set_index("Name", inplace=True, drop=False)
+df3
+---
+
+imagine we want to access 2 rows in column 'Country' and 'Employees'.
+there are 2 ways:
+==================================================
+1.  use label based indexing
+==================================================
+    the DataFrame has column labels and index labels. so here we use these labels:
+    so we should use 'loc' that takes a list of 2 cells.
+    each, can be a name of the column or name of the index,
+
+    get single value of a cell:
+    ---
+    df5 = df4.loc[1,"Address"]
+    df5
+    ---
+
+    get a range of values:
+    ---
+    df5 = df4.loc["1":"3","Address":"State"]
+    df5
+    ---
+
+    get all the column or index: we use ':'
+    ---
+    df5 = df4.loc[:,"Address"]
+    df5
+    ---
+
+    then we can gather them in a list:
+    ---
+    df5 = df4.loc[:,"Address"]
+    df5
+    ---
+
+==================================================
+2.  position based indexing (more common approach)
+==================================================
+    in order to access a part of data, use dataframe.iloc()
+    ---
+    df3=df2.iloc[1:3,1:4]
+    df3
+    ---
+
+    df3=df2.iloc[:,1:4]
+    df3
+    ---
+
+    df3=df2.iloc[3,1:4]
+    df3
+
+---------------------------------------------
+
+*** Deleting from table ***
+
+we use dataframe.drop() method.
+this method is not in-place operation. so your df7 dataframe will not be updated.
+
+delete a column or row: (we should pass the name of the coulmn "City" and 
+number '1' to show we want to delete a column, and '0' to show we want to delete a row.)
+
+delete a column:
+---
+df3=df2.drop("City",1)
+df3
+---
+
+delete a row:
+---
+df3=df2.drop(3,0)
+df3
+---
+
+***
+delete based on indexing:
+---
+df3=df2.drop(df2.index[1:4],0)
+df3
+---
+
+*** NOTE ***
+
+the dataframe.index[num : num] , returns a list of the indexes between the range
+the dataframe.index , returns a list of all indexes
+
+the dataframe.column[num : num] , returns a list of the columns between the range
+the dataframe.column , returns a list of all columns
+
+**************************************************
+**** Updating and adding new columns and rows ****
+**************************************************
+
+if we want to add a column, we should provide data for all indexes in that column.
+
+=================IMP==================
+to get the number of indexes:
+len(df.index)   # for example: 5 
+to get the number of columns:
+len(df.column)  # for example: 7 
+to get the number of both rows and columns:
+df.shape        # (5, 7)
+get number of rows based on shape():
+df.shape[0]     # 5
+get number of columns based on shape():
+df.shape[1]     # 7
+======================================
+
+to add a column named "Continent" to the table with the number of indexes, we have:
+---
+df2["Continent"] = df2.shape[0]*['North America']       # North America
+---
+this will add 5 "North America" to the table (or dataframe) of df2.
+
+Updating the contents of a column:
+---
+df2["Continent"] = df2["Country"]+","+"North America"   # USA,North America
+---
+
+***********************************
+**** Adding new Row  **************
+***********************************
+
+it's a bit tricky.
+we should use 'T' method. 'T' means 'Transposition'. 
+So the rows will become columns and columns will become rows.
+create a variable named 'df2_t'
+---
+df2_t=df2.T
+---
+
+now we can use the same approach as adding column.
+add a column, named "My Address" and fill all the rows:
+---
+df2_t["My Address"]=[7,"My City","my Country",10,7,"My Shop","My State","My Continent"]
+df2_t
+---
+
+then replace this variable with actual DataFrame:
+---
+df2 = df2_t
+---
+
+Update a Row:
+same approach for adding a row, but we should point to an existing row.
+---
+df2=df2_t.T
+df2_t["Address"]=[7,"My City","my Country",10,7,"My Shop","My State","My Continent"]
+df2=df2_t.T
+df2
+---
+
+iterationg in dataframe:
+there are some methods in pandas that allows us to apply a method or function 
+to all the rows of the dataframe. so there is no need to iterate.
+
+imagine a method (nom.geocode) from third party library that we want to apply on all rows of a column, 
+and add data to new column:
+---
+df["Coordinates"]=df["Address"].apply(nom.geocode)
+---
+
+add a 'Latitude' and 'Longitude' column from 'Coordinates':
+---
+df["Latitude"]=df["Coordinates"].apply(lambda x: x.latitude if x != None else None)
+df["Longitude"]=df["Coordinates"].apply(lambda x: x.longitude if x != None else None)
+---
+
+======================================
+**************************************
+************   Numpy   ***************
+**************************************
+======================================
+
+consider a small image with 3*5 pixels.
+each pixel has a value and that's what defines the intensity of the color for each pixel.
+so in reality, these pixels are numbers but computer display them in color format to be easily readable.
+so programs, use numbers to store images. but computer convert them to colors.
+Python can also do image proccessing, and stores and reads images using arrays of numbers.
+
+if you have installed pandas, numpy should be already installed.
+Numpy provides a multi dimensional array object.
+-------
+import numpy
+n = numpy.arange(27)
+n
+
+-------
+output is a one dimensional array:
+
+array([ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16,
+       17, 18, 19, 20, 21, 22, 23, 24, 25, 26])
+
+-------
+type(n)
+output: numpy.ndarray
+-------
+
+creating 2 dimensional array:
+-------
+n.reshape(3,9)      # 3*9=27
+
+output:
+array([[ 0,  1,  2,  3,  4,  5,  6,  7,  8],
+       [ 9, 10, 11, 12, 13, 14, 15, 16, 17],
+       [18, 19, 20, 21, 22, 23, 24, 25, 26]])
+-------
+
+creating 3 dimensional array:
+-------
+n.reshape(3,3,3)      # 3*3*3=27
+
+output:
+array([[[ 0,  1,  2],
+        [ 3,  4,  5],
+        [ 6,  7,  8]],
+
+       [[ 9, 10, 11],
+        [12, 13, 14],
+        [15, 16, 17]],
+
+       [[18, 19, 20],
+        [21, 22, 23],
+        [24, 25, 26]]])
+-------
+
+to convert any list to a numpy array, use numpy.asarray(list)
+-------
+m = numpy.asarray(list)
+-------
+so this array:
+---
+[[1,2,3],[4,5,6]]
+---
+will be numpy.ndarray:
+---
+print(m)
+
+[[1 2 3]
+ [4 5 6]]
+---
+
+install CV2:
+-----------
+python3.9 -m pip install opencv-python
+/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+brew install gtk+ 
+brew install opencv 
+-----------
+
+with cv2, we can load images.
+"cv2.imread()" takes 2 arguments. 1. the path. 2. number of 1 or 0
+0 means in gray scale, 1 means in RGB scale.
+-----------
+import cv2 
+im_g=cv2.imread("128 smallgray.png",0)
+im_g
+-----------
+output:
+
+array([[187, 158, 104, 121, 143],
+       [198, 125, 255, 255, 147],
+       [209, 134, 255,  97, 182]], dtype=uint8)
+-----------
+
+0 means black.
+255 means white.
+
+if we chane 0 to 1, we will get 3 dimensional array: blue array, red array and green array.
+
+-----------
+im_g=cv2.imread("128 smallgray.png",1)
+-----------
+output:
+
+array([[[187, 187, 187],
+        [158, 158, 158],
+        [104, 104, 104],
+        [121, 121, 121],
+        [143, 143, 143]],
+
+       [[198, 198, 198],
+        [125, 125, 125],
+        [255, 255, 255],
+        [255, 255, 255],
+        [147, 147, 147]],
+
+       [[209, 209, 209],
+        [134, 134, 134],
+        [255, 255, 255],
+        [ 97,  97,  97],
+        [182, 182, 182]]], dtype=uint8)
+-----------
+
+to create an image with numpy array, we can use "cv2.imwrite()"
+it takes a name for file and the numpy array
+-----------
+cv2.imwrite("newImage.png", im_g)
+-----------
+
+imagine having this array:
+-----------
+[[187, 158, 104, 121, 143],
+ [198, 125, 255, 255, 147],
+ [209, 134, 255,  97, 182]]
+-----------
+
+in order to get the just four numbers (or pixels) of it, we can use indexes for rows and columns:
+-----------
+im_g[0:2,2:4]
+-----------
+output:
+
+array([[104, 121],
+       [255, 255]], dtype=uint8)
+-----------
+
+so the '0:2' means the range for rows. and the '2:4' means the range for columns
+
+
+Iterating in Numpy array:
+1) use for loop and the 'i' represents as the 'rows' of numpy array.
+-----------
+for i in im_g:
+    print(i)
+-----------
+
+2) if you want to iterate through columns, use 'T' method
+-----------
+for i in im_g.T:
+    print(i)
+-----------
+
+3) if you want to iterate value by value, use .flat :
+flat will allow us to access the numpy array, one by one.
+-----------
+for i in im_g.flat:
+    print(i)
+-----------
+
+
+A NumPy array is a grid of values. They are similar to lists, except that every element of an array must be the same type. 
+
+-----------
+import numpy
+
+a = numpy.array([1,2,3,4,5])
+print a[1]          #2
+
+b = numpy.array([1,2,3,4,5],float)
+print b[1]          #2.0
+-----------
+In the above example, numpy.array() is used to convert a list into a NumPy array. The second argument (float) can be used to set the type of array elements.
+
+
+
+***********************************************************
+*** Concatenating, Stacking and Splitting numpy arrays. ***
+***********************************************************
+
+*** Concatenate or Merging arrays ***
+we can Concatenate 2 arrays in 2 ways. horizontally and vertically.
+
+1) to Concatenate 2 arrays horizontally, we should pass a tuple to the "numpy.hstack()"
+---------------
+import numpy
+ims = numpy.hstack((im_g, im_g))
+ims
+
+output:
+array([[187, 158, 104, 121, 143, 187, 158, 104, 121, 143],
+       [198, 125, 255, 255, 147, 198, 125, 255, 255, 147],
+       [209, 134, 255,  97, 182, 209, 134, 255,  97, 182]], dtype=uint8)
+---------------
+
+if you want, you can add more:
+ims = numpy.hstack((im_g1, im_g2, im_g3))
+---------------
+
+if you want to stack vertically, use numpy.vstack()
+---------------
+import numpy
+ims = numpy.vstack((im_g,im_g))
+print(ims)
+
+output:
+[[187 158 104 121 143]
+ [198 125 255 255 147]
+ [209 134 255  97 182]
+ [187 158 104 121 143]
+ [198 125 255 255 147]
+ [209 134 255  97 182]]
+---------------
+
+if you try to concatenate arrays with different dimensions, you get error.
+
+*** Splitting arrays into smaller arrays ***
+when using 'hsplit()' or 'vsplit()' you should pass a number that divisible by the number of numpy array.
+so if the number of columns is 5, you cannot use 'hsplit(3)' but you can use 'hsplit(1) or hsplit(5)'
+so if the number of rows is 9, you cannot use 'hsplit(5)' but you can use 'hsplit(3) or hsplit(9)'
+---------------
+lst=numpy.hsplit(ims,5)
+print(lst)
+
+or
+
+lst=numpy.vsplit(ims,3)
+print(lst)
+
+output:
+[array([[187, 158, 104, 121, 143],
+       [198, 125, 255, 255, 147]], dtype=uint8), array([[209, 134, 255,  97, 182],
+       [187, 158, 104, 121, 143]], dtype=uint8), array([[198, 125, 255, 255, 147],
+       [209, 134, 255,  97, 182]], dtype=uint8)]
+---------------
+
+******************************
+******** Attention ***********
+******************************
+whenever you faced this error:
+Import "module-X" could not be resolved
+while you've installed 'module-X', you should change the base python to another version.
+click on left bottom button in VS-Code and change the version of python
+
+
+*****************************
+********* Web Map ***********
+*****************************
+
+install 'folium'
+
+--------------------
+$ pip install folium
+--------------------
+>>> import folium
+>>> map = folium.Map(location=[80,-100], zoom_start=6)
+>>> print(map)
+<folium.folium.Map object at 0x7f9c0a293d60>
+>>> map.save("Map1.html")
+--------------------
+
+so "Map1.html" will be created.
+
+**************************************************
+***** Try-Catch in Python: called Try-Except *****
+**************************************************
+
+def divide(a, b):
+    try:
+        return a/b
+    except:
+        return "Zero division is meaningless"
+        
+
+print(divide(1,0))
+
+
+***********************************
+************* shape ***************
+***********************************
+
+
+The shape tool gives a tuple of array dimensions and can be used to change the dimensions of an array.
+
+(a). Using shape to get array dimensions
+
+import numpy
+
+my__1D_array = numpy.array([1, 2, 3, 4, 5])
+print my_1D_array.shape     #(5,) -> 1 row and 5 columns
+
+my__2D_array = numpy.array([[1, 2],[3, 4],[6,5]])
+print my_2D_array.shape     #(3, 2) -> 3 rows and 2 columns 
+
+(b). Using shape to change array dimensions
+
+import numpy
+
+change_array = numpy.array([1,2,3,4,5,6])
+change_array.shape = (3, 2)
+print change_array      
+
+#Output
+[[1 2]
+[3 4]
+[5 6]]
+
+***********************************
+************* reshape *************
+***********************************
+
+
+The reshape tool gives a new shape to an array without changing its data. It creates a new array and does not modify the original array itself.
+
+import numpy
+
+my_array = numpy.array([1,2,3,4,5,6])
+print numpy.reshape(my_array,(3,2))
+
+#Output
+[[1 2]
+[3 4]
+[5 6]]
+
+
+***********************************
+************* Transpose ***********
+***********************************
+
+We can generate the transposition of an array using the tool numpy.transpose.
+It will not affect the original array, but it will create a new array.
+
+import numpy
+
+my_array = numpy.array([[1,2,3],
+                        [4,5,6]])
+print numpy.transpose(my_array)
+
+#Output
+[[1 4]
+ [2 5]
+ [3 6]]
+
+***********************************
+************* Flatten *************
+***********************************
+
+The tool flatten creates a copy of the input array flattened to one dimension.
+
+import numpy
+
+my_array = numpy.array([[1,2,3],
+                        [4,5,6]])
+print my_array.flatten()
+
+#Output
+[1 2 3 4 5 6]
+
+
+***********************************
+************* sum *****************
+***********************************
+
+The sum tool returns the sum of array elements over a given axis.
+
+import numpy
+
+my_array = numpy.array([ [1, 2], [3, 4] ])
+
+print numpy.sum(my_array, axis = 0)         #Output : [4 6]
+print numpy.sum(my_array, axis = 1)         #Output : [3 7]
+print numpy.sum(my_array, axis = None)      #Output : 10
+print numpy.sum(my_array)                   #Output : 10
+
+By default, the axis value is None. Therefore, it performs a sum over all the dimensions of the input array.
+
+***********************************
+************* prod ****************
+***********************************
+
+The prod tool returns the product of array elements over a given axis.
+
+import numpy
+
+my_array = numpy.array([ [1, 2], [3, 4] ])
+
+print numpy.prod(my_array, axis = 0)            #Output : [3 8]
+print numpy.prod(my_array, axis = 1)            #Output : [ 2 12]
+print numpy.prod(my_array, axis = None)         #Output : 24
+print numpy.prod(my_array)                      #Output : 24
+
+By default, the axis value is None. Therefore, it performs the product over all the dimensions of the input array.
+
+
+*********************************************
+*************** Important pandas ************
+*********************************************
+
+import pandas
+data = pandas.read_csv("154 reviews.csv")
+
+print(data)             # prints the whole data
+print(data.head())      # prints the first 5 rows.
+print(data.head(10))    # prints the first 10 rows.
+
+data.shape              # get the shape of data with 'shape' property 
+                        # output:   (45000, 4)
+
+data.columns            # output:   Index(['Course Name', 'Timestamp', 'Rating', 'Comment'], dtype='object')
+
+data.iloc[3]            # select a row. iloce[] takes the row index
+                        # it returns a series of 1 row
+
+data.iloc[1:3]          # select multiple rows. it returns a dataframe.
+
+----  ****
+# selecting a "section". Means selecting a particular rows and columns.
+data.[['Course Name', 'Rating']].iloc[1:3]    
+----                                                     
+
+# selecting a cell:
+1) first approach: use general approach. select a column and the index
+----
+data["Timestamp"].iloc[2]
+----
+
+2) second approach:  it takes the index and the name of the column
+----
+data.at[2, 'Rating']
+----
+
+**********************************************************
+to see an overview of a column, use .hist(columnName)
+**********************************************************
+
+data.hist("Rating")     # this will represent as a destribiuted chart by the values of Rating column.
+
+**********************************************************
+Filtering data based on conditions
+**********************************************************
+
+bring the condition inside '[]':
+----
+data[data["Rating"] >= 4]
+----
+
+get the number of items in dataframe:
+----
+len(data[data["Rating"] >= 4])
+
+# output:   38873
+
+OR
+
+data[data["Rating"] >= 4].count()
+
+# output:   
+Course Name    38873
+Timestamp      38873
+Rating         38873
+Comment         5911    # because most of data is NaN
+dtype: int64
+----
+
+selecting a column of conditional selected dataframe:
+----
+data[data["Rating"] >= 4]["Rating"]
+---- 
+
+apply a function on selected conditional column of a datafram:
+----
+data[data["Rating"] >= 4]["Rating"].mean()
+---- 
+
+*** Multiple Conditions ***
+we should use 2 or more conditions separated inside paranthesis:
+data[() & () & ()]
+
+----
+data[(data['Rating'] > 4) & (data["Course Name"] == "The Compelete Python Course")]
+----
+
+extract "Rating" out of that:
+----
+data[(data['Rating'] > 4) & (data["Course Name"] == "The Compelete Python Course")]["Rating"].mean()
+----
+
+*************************************
+******  Time Based Filtering  *******
+*************************************
+
+we want to select data from datafram based on range of time:
+so we need to use 2 conditions: data[() & ()]
+and also we should import and use 'datetime' library
+* Note: that we should parse 'dates' in the csv data file. so we should use 'parse_dates[]' 
+and inside [], we bring the column that we want it to be parsed.
+
+in order to make both dates compatible (the one with datetime() and the parsed one)
+we shuold ensure that both dates are based on same timezones.
+so we should import utc from pytz and add 'tzinfo' to datetime()
+
+select datafram between first of july and 31 of december
+----
+from datetime import datetime
+from pytz import utc
+data = pandas.read_csv("reviews.csv", parse_dates=["Timestamp"])
+
+data[(data["Timestamp"] >= datetime(2020, 7, 1, tzinfo=utc)) & (data["Timestamp"] <= datetime(2020, 12, 31, tzinfo=utc))]
+----
+
+****************
+*** isnull() ***
+****************
+to check if a value is NaN, use 'isnull()' method.
+the opposite of that is 'nonnull()' for the time that we have some value and we want to check it.
+---
+data[data["Comment"].isnull()].count()
+
+data[data["Comment"].notnull()].count()
+---
+
+search for items that contains a certain word:
+---
+data[data["Comment"].str.contains('accent', na=False)]
+---
+this will look for the word 'accent' in all the rows of "Comment" column
+and ignore the "NaN" values. (na=False)
+=======================================================================================
+
+Till now, we changed Data to Data. But Data Analysis is to convert data to information.
+
+***************IMP*****************
+*** Aggregate and Optimize Data ***
+***********************************
+
+sometimes, there are many reapeated queries in our data. so we will have several rows with same data.
+so we should convert them to '1' average value.
+
+that's why we should use 'pandas.groupby'
+the 'groupby', tries to find identical values in the given column,
+And will create new dataframe.
+
+suppose that we want to groupby all rows that are in the same day.
+'groupby' can't find identical values, because although some values are in the same day,
+but the hours of that day might be different. so we should add a new column named ["Day"] for example.
+and get the day by 'data["Timestamp"].dt.day'.
+the 'dt' can provide us: 'dt.date', 'dt.day', 'dt.month', 'dt.year'
+and after that, we should tell the 'groupby()', based on what, it should group items?
+so we add '.mean()'
+
+in order to show data on graph, we can import:
+'import matplotlib.pyplot as plt'
+
+------------------------------
+from datetime import datetime
+import matplotlib.pyplot as plt
+data = pandas.read_csv("154 reviews.csv", parse_dates=["Timestamp"])
+
+data["Day"] = data["Timestamp"].dt.date
+day_average = data.groupby(["Day"]).mean()
+plt.figure(figsize=(25, 3))     # to set the height and width of the grarph.
+plt.plot(day_average.index, day_average["Rating"])
+------------------------------
+
+imagine we wanted to sort and groupby all items based on "week".
+but we have a problem.
+in each year, we have 53 weeks. but since we have several years,
+the pandas will aggregate the first week of the 2020 and 2021 and 2022, together.
+which is incorrect!
+
+so we might should use 'dt.isocalendar().week' instead.
+but still has the same problem.
+
+we should use 'dt.strftime('%Y-%U')'
+with this approch, we take both 'year' and 'week'. so we can distinguish between different rows.
+if you wanted the month, you could use 'dt.strftime('%m-%U')' => takes 'month' and 'week'
+
+------------------------------
+from datetime import datetime
+import matplotlib.pyplot as plt
+data = pandas.read_csv("154 reviews.csv", parse_dates=["Timestamp"])
+
+data["Week"] = data["Timestamp"].dt.strftime('%Y-%U')
+week_average = data.groupby(["Week"]).mean()
+plt.figure(figsize=(25, 3))     # to set the height and width of the grarph.
+plt.plot(week_average.index, week_average["Rating"])
+------------------------------
+
+*******************************
+********* mean method *********
+*******************************
+
+when we use the 'mean()' method, it only applies on the column that has number values.
+and it won't show other columns in output dataframe.
+in order to show the column having values and another column, we should groupby other column too:
+------------
+ data["Week"] = data["Timestamp"].dt.strftime('%Y-%U')
+week_average = data.groupby(["Week", "Course Name"]).mean()
+------------ 
+
+but it will show all "Course Names" for any week, again and agian.
+to represent data better, we use '.unstack()'
+------------
+data = pandas.read_csv("reviews.csv", parse_dates=["Timestamp"])
+data["Week"] = data["Timestamp"].dt.strftime('%Y-%U')
+week_average = data.groupby(["Week","Course Name"]).mean().unstack()
+week_average[:20]
+------------ 
+
+and if you want to see the 'plot' of all average values of 2 columns:
+------------ 
+week_average.plot(figsize=(25, 8))
+------------ 
+
+
+**************************************************************
+**** selecting the first column of multi index ***************
+**************************************************************
+
+consider below, multiIndex:
+------------------------------------------
+MultiIndex([('Sunday', '0'),
+            ('Monday', '1'),
+            ('Tuesday', '2'),
+            ('Wednesday', '3'),
+            ('Thursday', '4'),
+            ('Friday', '5'),
+            ('Saturday', '6'),
+      names=['Weekday', 'Daynumber'])
+------------------------------------------
+
+to get just the names of the week, we should use 'index.get_level_values(0)'.
+---
+week_average.index.get_level_values(0)
+---
+
+*****************
+**** Justpy *****
+*****************
+the 'justpy()' will call the passing function (app() here.)
+---------------------------------------
+jp.justpy(app)
+
+def hello_world():
+    wp = jp.WebPage()
+    d = jp.Div(text='Hello world!')
+    wp.add(d)
+    return wp
+
+jp.justpy(hello_world)
+---------------------------------------
+
+*******************
+**** HighCarts ****
+*******************
+
+HighCarts is a javascript library, but we can use it in python through justpy.
+justpy is a web platform for python.
+---------------------------------------
+import justpy as jp
+import pandas
+from datetime import datetime
+from pytz import utc
+
+# load the dataframe:
+data = pandas.read_csv("154 reviews.csv", parse_dates=["Timestamp"])
+data["Day"] = data["Timestamp"].dt.date
+day_average = data.groupby(['Day']).mean()
+
+
+# in order to use highchart's charts, we nneed to choose one of them and
+# copy its part of code that contains JS chart config and paste it here as string:
+# we place the code, between 3 qutations: """ & """
+# Note: after pasting the code, check it and delete all Js codes.
+
+chart_def = """
+{
+  chart: {
+    type: 'spline',
+    inverted: true
+  },
+  title: {
+    text: 'Atmosphere Temperature by Altitude'
+  },
+  subtitle: {
+    text: 'According to the Standard Atmosphere Model'
+  },
+  xAxis: {
+    reversed: false,
+    title: {
+      enabled: true,
+      text: 'Date'
+    },
+    labels: {
+      format: '{value}'
+    },
+    accessibility: {
+      rangeDescription: 'Range: 0 to 80 km.'
+    },
+    maxPadding: 0.05,
+    showLastLabel: true
+  },
+  yAxis: {
+    title: {
+      text: 'Average Rating'
+    },
+    labels: {
+      format: '{value}'
+    },
+    accessibility: {
+      rangeDescription: 'Range: -90°C to 20°C.'
+    },
+    lineWidth: 2
+  },
+  legend: {
+    enabled: false
+  },
+  tooltip: {
+    headerFormat: '<b>{series.name}</b><br/>',
+    pointFormat: '{point.x}: {point.y}'
+  },
+  plotOptions: {
+    spline: {
+      marker: {
+        enable: false
+      }
+    }
+  },
+  series: [{
+    name: 'Average Rating',
+    data: [[0, 15], [10, -50], [20, -56.5], [30, -46.5], [40, -22.1],
+      [50, -2.5], [60, -27.7], [70, -55.7], [80, -76.5]]
+  }]
+}
+"""
+
+
+def app():
+    # create a  webpage
+    wp = jp.WebPage()
+    # create a titile. QDiv, as first argument, takes the parameter, where this div belongs to
+    # use "Quasar Styles" for css classes.
+    h1 = jp.QDiv(a=wp, text="Analysis of Course Revies",
+                 classes="text-center q-pa-md", color='primary')
+    p1 = jp.QDiv(a=wp, text="These graphs represent course review analysis.")
+    # define highChart: the 'HighCharts()' accepts our chart as options
+    # justpy will convert the chart config from json format to python dictionary.
+    hc = jp.HighCharts(a=wp, options=chart_def)
+    # we can have access to the variables of the chart config (defined above) via options:
+    # changing the title:
+    hc.options.title.text = "Average Rating by Day"
+    # change the data of the chart, with this format:
+    # x = [3, 6, 8]
+    # y = [4, 7, 9]
+    # hc.options.series[0].data = list(zip(x, y))
+
+    # but we should pass the dataframe data to the chart with below approach.
+    hc.options.xAxis.categories = list(day_average.index)
+    hc.options.series[0].data = list(day_average["Rating"])
+
+    # to reverese this graph, change the 'inverted' to false
+    hc.options.chart.inverted = False
+    return wp
+
+---------------------------------------
+
+another graph
+---------------------------------------
+import justpy as jp
+import pandas
+from datetime import datetime
+from pytz import utc
+
+# load the dataframe:
+data = pandas.read_csv("154 reviews.csv", parse_dates=["Timestamp"])
+data['Month'] = data['Timestamp'].dt.strftime('%Y-%m')
+month_average_crs = data.groupby(['Month', 'Course Name'])[
+    'Rating'].count().unstack()
+chart_def = """{
+  chart: {
+    type: 'spline'
+  },
+  title: {
+    text: 'Average fruit consumption during one week'
+  },
+  legend: {
+    layout: 'vertical',
+    align: 'left',
+    verticalAlign: 'top',
+    x: 150,
+    y: 100,
+    floating: false,
+    borderWidth: 1,
+    backgroundColor:
+        '#FFFFFF'
+  },
+  xAxis: {
+    categories: [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday'
+    ],
+    plotBands: [{ // visualize the weekend
+      from: 4.5,
+      to: 6.5,
+      color: 'rgba(68, 170, 213, .2)'
+    }]
+  },
+  yAxis: {
+    title: {
+      text: 'Fruit units'
+    }
+  },
+  tooltip: {
+    shared: true,
+    valueSuffix: ' units'
+  },
+  credits: {
+    enabled: false
+  },
+  plotOptions: {
+    areaspline: {
+      fillOpacity: 0.5
+    }
+  },
+  series: [{
+    name: 'John',
+    data: [3, 4, 3, 5, 4, 10, 12]
+  }, {
+    name: 'Jane',
+    data: [1, 3, 4, 3, 3, 5, 4]
+  }]
+}
+"""
+
+
+def app():
+    wp = jp.WebPage()
+    h1 = jp.QDiv(a=wp, text="Analysis of Course Revies",
+                 classes="text-center q-pa-md", color='primary')
+    p1 = jp.QDiv(a=wp, text="These graphs represent course review analysis.")
+
+    hc = jp.HighCharts(a=wp, options=chart_def)
+    hc.options.xAxis.categories = list(month_average_crs.index)
+    # in this chart, we should add data based on the chart supported format for its given data.
+    # the series, includes dictionaries that each of them represents a line. -> {name: "", data: []}
+    # the code below, loops through 7 strings of columns
+    hc_data = [{"name": v1, "data": [v2 for v2 in month_average_crs[v1]]}
+               for v1 in month_average_crs.columns]
+
+    hc.options.series = hc_data
+    return wp
+
+
+jp.justpy(app)
+
+---------------------------------------
+
+Creating a pie chart:
+---------------------------------------
+import justpy as jp
+import pandas
+from datetime import datetime
+from pytz import utc
+
+# load the dataframe:
+data = pandas.read_csv("154 reviews.csv", parse_dates=["Timestamp"])
+data['Month'] = data['Timestamp'].dt.strftime('%Y-%m')
+share = data.groupby(['Course Name'])['Rating'].count()
+
+chart_def = """{
+  chart: {
+    plotBackgroundColor: null,
+    plotBorderWidth: null,
+    plotShadow: false,
+    type: 'pie'
+  },
+  series: [{
+    name: 'Brands',
+    colorByPoint: true,
+    data: [{
+      name: 'Chrome',
+      y: 61.41,
+      sliced: true,
+      selected: true
+    }, {
+      name: 'Internet Explorer',
+      y: 11.84
+    }]
+  }]
+}
+"""
+
+
+def app():
+    wp = jp.WebPage()
+    h1 = jp.QDiv(a=wp, text="Analysis of Course Revies",
+                 classes="text-center q-pa-md", color='primary')
+    p1 = jp.QDiv(a=wp, text="These graphs represent course review analysis.")
+
+    hc = jp.HighCharts(a=wp, options=chart_def)
+    # in this chart, we should add data based on the chart supported format for its given data.
+    # the series, includes dictionaries that each of them represents a line. ->
+    # {name: "", colorByPoint: true, data: [{ name: "", y:"""}]}
+    # the code below, loops through 7 strings of columns
+    hc_data = [{"name": v1, "y": v2} for v1, v2 in zip(share.index, share)]
+
+    hc.options.series[0].data = hc_data
+    return wp
+
+
+jp.justpy(app)
+
+---------------------------------------
+
+***********************
+*** Flask Framework ***
+***********************
+
+$ pip install flask
+
+------------------------------------------------------------------
+from flask import Flask
+
+# the '__name__' is a variable that will get the name of the script as value.
+app = Flask(__name__)
+
+# we use '@app' decorator which has a route method.
+# the 'route()', takes a URL to be viewed on your website.
+# the following method will be the method which will be called in that route.
+
+
+@app.route('/')
+def home():
+    return "Homepage here!"
+
+
+@app.route('/about/')
+def about():
+    return "About Page!"
+
+
+# when we execute the file, the '__main__' value will get assigned to '__name__'
+# so when we write $python script1.py , it will execute this file directly and
+# assign '__main__' as '__name__'. and condition will be True and app will be ran
+# but when we import this file into another file, the condition below will be false!
+# and the 'script1.py' will be assigned to '__name__'.
+if __name__ == "__main__":
+    app.run(debug=True)
+
+------------------------------------------------------------------
+
+*************************
+*** Add HTML Template ***
+*************************
+
+now we need to return HTML elements. 
+So we should import 'render_template' from flask library.
+it will store HTML file and then display that.
+the html files should be stored in 'templates' folder. so the 'render_template' can access them.
+
+------------------------------------------------------------
+from flask import Flask, render_template
+
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return render_template("home.html")
+
+@app.route('/about/')
+def about():
+    return render_template("about.html")
+
+if __name__ == "__main__":
+    app.run(debug=True)
+
+------------------------------------------------------------
+
+consider 3 HTML files: 'layout.html' as parent, 'home.html' and 'about.html' as child
+------------------------------------------------------------
+<body>
+    <header>
+      <div class="container">
+        <h1 class="logo">Ardit's web app</h1>
+        <strong><nav>
+          <ul class="menu">
+            <li><a href="{{ url_for('home') }}">Home</a></li>
+            <li><a href="{{ url_for('about') }}">About</a></li>
+          </ul>
+        </nav></strong>
+      </div>
+    </header>
+    <div class="container">
+        {%block content%}
+        {%endblock%}
+    </div>
+  </body>
+------------------------------------------------------------
+these href attributes will call the python methods which are responsible for viewing routes.
+template inheritance: the parent will be current file and the child will be 'home.html' and 'about.html'
+and the child html files will be replaced with {%block content%}
+the '{%endblock%}' means the end of the block.
+
+in other files, we need to extend the parent file 'layout.html' and
+specify the start and the end of block content.
+------------------------------------------------------------
+home.html
+---------------------------
+{% extends "layout.html" %}
+{% block content %}
+<div class="home">
+    <h1>My homepage</h1>
+    <p>This is a test website</p>
+</div>
+{% endblock %}
+------------------------------------------------------------
+about.html
+---------------------------
+{% extends "layout.html" %}
+{% block content %}
+<div class="about">
+    <h1>My about page</h1>
+    <p>This is a test website again</p>
+    <p>This was added later</p>
+</div>
+{% endblock %}
+------------------------------------------------------------
+
+=================================
+*********************************
+*****  Virtual Environment  *****
+*********************************
+=================================
+
+Virtual environments create a "bubble" around your project so that any libraries or packages you 
+install within it don't affect your entire machine.
+
+before start to coding any python application, it's recommended to create a Virtual Environment
+which is isolated from our other files frorm out main Python installation.
+we should have a clean installation of python which is used only for our application.
+In that installation, we don't want to have libraries we don't need for fast applications, installed in our Virrtual machine.
+
+to create a Virrtual Environment, we should use 'virtualenv' python library.
+---
+$ pip install virtualenv
+---
+
+=========================================================================================================
+*** Note:
+    The Virtual Environment should be created on the same level of our root directory.
+    so it should be the parent folder that containes both 'main application' and 'Virtual Environment'.
+
+    so if the files are in '/main/appSrc/script.py', the 'VE' should be created in './main'.
+=========================================================================================================
+
+use 'virtualenv' library:
+---
+$ python -m venv virtual
+---
+'venv' is the name of the module of the library
+'-m' is an argument that allows Python to locate modules for execution as scripts.
+'virtual' is the name of the folder wher the 'VN' files will be stored in.
+
+now, in order to use python commands, we should write the path to those files:
+---
+$ virtual/Script/python     <=>     $ python
+>>>
+---
+
+in order to activate the 'Virtual Environment':
+---
+$ source virtual/bin/activate
+---
+
+now we should install libraries which are needed in our application.
+but since we are in new Environment, anything we install, will be setup in 'VE'
+---
+$ pip install flask
+---
+saved in 'virtual/bin/flask'
+
+to deactivate the Environment:
+---
+$ deactivate
+---
+
+we can also install packages, without activating and deactivating the Virtual Environment,
+if we point to the 'bin' file and run 'pip install sth':
+---
+$ virtual/bin/pip install numpy 
+---
+
+to run app without activating the 'VE', point to 'bin' and run 'python fileName':
+---
+$ virtual/bin/python appSrc/script1.py
+---
+
+to see what packages we have in Virtual Environment:
+---
+$ virtual/bin/pip freeze
+---
+
+***************
+*** tkinter ***
+***************
+tkinter is a tool for creating graphical User Interface to create desktop apps
+----------------------------------------------
+# in tkinter, we have 2 main parts. 1) window 2) widget
+from tkinter import *
+
+# 'TK()' will create an empty window for us.
+window = Tk()
+
+
+def km_to_miles():
+    # to get the string value of an object, use 'get()'
+    miles = float(e1_value.get())*1.6
+    # replace the text of 't1' with 'miles'
+    t1.insert(END, miles)
+
+
+# add button as widget. it accepts the 'window' that the button should be attached to.
+# to add an event on button onClick, add 'command' which takes a function
+# we shouldn't call the function by paranthesis. let the python do that!
+b1 = Button(window, text="Execute", command=km_to_miles)
+# 'grid()' set the position of 'b1' button
+b1.grid(row=0, column=0)
+# everything should be added between 'Tk()' and 'window.mainloop() '
+
+# add an input
+# e1_value will be replaced with the text of the input variable, using 'textvariable'
+e1_value = StringVar()
+e1 = Entry(window, textvariable=e1_value)
+e1.grid(row=0, column=1)
+
+# add textbox widget
+t1 = Text(window, height=1, width=20)
+t1.grid(row=0, column=2)
+
+window.mainloop()
+
+----------------------------------------------
+
+******************************
+*** Connecting to Database ***
+******************************
+
+libraries that we use to connect python to SQLight, is 'sqlite3'
+and the one to connect to PostgreSQL, is 'psycopg2'
+
+the difference between Sqlite and PostgreSQL is that Sqlite is based on file
+and you can send its files to someone else, but for openin PostgreSQL, user needs to 
+have PostgreSQL, installed on his machine.
+
+connect sqlite:
+1) connect to a database
+2) create a cursor object: which is a pointer to the rows of the tables from database.
+3) write an sql query
+4) commit the changes to the database
+5) close the connection
+-------------------------------------------------------------
+import sqlite3
+
+
+def create_table():
+    # 1) connect to a database
+    conn = sqlite3.connect("lite.db")
+    # 2) create a cursor object: which is a pointer to the rows of the tables from database.
+    cur = conn.cursor()
+    # 3) write an sql query
+    cur.execute(
+        "CREATE TABLE IF NOT EXISTS store (item TEXT, quantity INTEGER, price REAL)")
+    # 4) commit the changes to the database
+    conn.commit()
+    # 5) close the connection
+    conn.close()
+
+
+def insert(item, quantity, price):
+    # 1) connect to a database
+    conn = sqlite3.connect("lite.db")
+    # 2) create a cursor object: which is a pointer to the rows of the tables from database.
+    cur = conn.cursor()
+    # 3) add data to table
+    # the following syntax, avoides SQL injection
+    cur.execute("INSERT INTO store VALUES (?, ?, ?)", (item, quantity, price))
+    # 4) commit the changes to the database
+    conn.commit()
+    # 5) close the connection
+    conn.close()
+
+
+insert("Coffee Cup", 10, 5)
+
+
+def view():
+    conn = sqlite3.connect("lite.db")
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM store")
+    rows = cur.fetchall()
+    conn.close()
+    return rows
+
+
+def delete(item):
+    conn = sqlite3.connect("lite.db")
+    cur = conn.cursor()
+    cur.execute("DELETE FROM store WHERE item=?", (item,))
+    conn.commit()
+    conn.close()
+
+
+def update(quantity, price, item):
+    conn = sqlite3.connect("lite.db")
+    cur = conn.cursor()
+    cur.execute("UPDATE store SET quantity=?, price=? WHERE item=?",
+                (quantity, price, item))
+    conn.commit()
+    conn.close()
+
+
+delete("Coffee Cup")
+update(20, 20, "Water Glass")
+print(view())
+
+-------------------------------------------------------------
+
+connect psycopg2:
+1) install psycopg2   $ pip install psycopg2
+3) setup config file
+2) connect to a database
+3) create a cursor object: which is a pointer to the rows of the tables from database.
+4) write an sql query
+5) commit the changes to the database
+6) close the connection
+-------------------------------------------------------------
+import psycopg2
+
+def create_table():
+    # 1) connect to a database
+    conn = psycopg2.connect(
+        "dbname='database1' user='postgres' password='postgres123' host='localhost' port='5432'")
+    # 2) create a cursor object: which is a pointer to the rows of the tables from database.
+    cur = conn.cursor()
+    # 3) write an sql query
+    cur.execute(
+        "CREATE TABLE IF NOT EXISTS store (item TEXT, quantity INTEGER, price REAL)")
+    # 4) commit the changes to the database
+    conn.commit()
+    # 5) close the connection
+    conn.close()
+
+def insert(item, quantity, price):
+    # 1) connect to a database
+    conn = psycopg2.connect(
+        "dbname='database1' user='postgres' password='postgres123' host='localhost' port='5432'")
+    # 2) create a cursor object: which is a pointer to the rows of the tables from database.
+    cur = conn.cursor()
+    # 3) add data to table
+    # the following syntax, avoides SQL injection
+    cur.execute("INSERT INTO store VALUES (%s, %s, %s)",
+                (item, quantity, price))
+    # 4) commit the changes to the database
+    conn.commit()
+    # 5) close the connection
+    conn.close()
+
+def view():
+    conn = psycopg2.connect(
+        "dbname='database1' user='postgres' password='postgres123' host='localhost' port='5432'")
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM store")
+    rows = cur.fetchall()
+    conn.close()
+    return rows
+
+def delete(item):
+    conn = psycopg2.connect(
+        "dbname='database1' user='postgres' password='postgres123' host='localhost' port='5432'")
+    cur = conn.cursor()
+    cur.execute("DELETE FROM store WHERE item=%s", (item,))
+    conn.commit()
+    conn.close()
+
+def update(quantity, price, item):
+    conn = psycopg2.connect(
+        "dbname='database1' user='postgres' password='postgres123' host='localhost' port='5432'")
+    cur = conn.cursor()
+    cur.execute("UPDATE store SET quantity=%s, price=%s WHERE item=%s",
+                (quantity, price, item))
+    conn.commit()
+    conn.close()
+
+create_table()
+insert("Coffee Cup", 10, 5)
+delete("Coffee Cup")
+update(20, 20, "Water Glass")
+print(view())
+-------------------------------------------------------------
+
+========================
+************************
+**** Class / Classes ***
+************************
+========================
+
+*** Abstraction means the implementation is hidden from the user, and only the relevant data or information is shown.
+
+the first method that gets executed after creating an instance of a class, is '__init__(self)' method.
+in other programming languages, it's called 'constructor'.
+
+imagine having a class named 'Database' in 'backend.py' file.
+if you want to import a class, here is the syntax:
+---
+from backend import Database
+
+#to create an instance:
+database = Database()
+---
+
+self refers to the instance whose method was called.
+---
+class my_secrets:
+    def __init__(self, password):
+        self.password = password
+        pass
+instance = my_secrets('1234')
+instance.password
+>>>'1234'
+
+---
+when we create an instance from a class, and call the class 'Database()', 
+the class, pass the instance to the 'self' parameter of the '__init__' method.
+so the 'self' parameter in '__init__(self)' will be replaced with the instance object argument 
+
+you need to pass the 'self' parameter, to the other methods of the class too.
+once you want to define a variable for all methods of the class, you should 
+define it in '__init__()' method with the following syntax:
+----------------------------------------------
+__init__(self):
+    self.x = sth
+
+
+# then, in other methods, we have...
+method_1(self):
+    y = self.x
+----------------------------------------------
+
+!!! NOTE !!!
+After the execution has beed done, you can use the '__del__(self)' method for removing
+or disconnecting the database.
+so the '__init__' gets called once we created an object from the class,
+and the '__del__' gets called when the compiler exits the script of that class.
+
+**********************
+*** Pass statement ***
+**********************
+It is a null operation used mainly as a placeholder in functions, classes, etc.
+
+Suppose we have a loop or a function that is not implemented yet, but we want to implement it 
+in the future. They cannot have an empty body. The interpreter would give an error. 
+So, we use the pass statement to construct a body that does nothing.
+
+pass statement is a null statement. The difference between a comment and a pass statement 
+in Python is that while the interpreter ignores a comment entirely, pass is not ignored.
+
+---
+sequence = {'p', 'a', 's', 's'}
+for val in sequence:
+    pass
+
+def function(args):
+    pass
+
+class Example:
+    pass
+---
+
+*******************
+*** Inheritance ***
+*******************
+
+here is the syntax. the 'Accounnt' class is an absolute class which can be inherited.
+we need to pass the name of parent class as argument to child class, and
+call the parent's __init__ function, (Account.__init__()) in the 
+__init__ function of child class. (Chacking here.)
+-------------------------------------------
+class Account:
+    def __init__(self, filepath):
+        self.filepath = filepath
+        # ...
+
+
+class Checking(Account):
+
+    type = "checking"
+
+    def __init__(self, filepath, fee):
+        Account.__init__(self, filepath)
+        self.fee = fee
+        # ...
+-------------------------------------------
+
+***
+Note:
+Instance methods can modify the state of an instance or the state of its parent class.
+***
+
+
+**********************
+*** class variable ***
+**********************
+class variables are declared inside the class but outside of class methods.
+
+
+**********************
+*** Book Store App ***
+**********************
+
+-------------------------------------------------------------
+backend.py
+-------------------
+import sqlite3
+
+class Database:
+    def __init__(self, db):
+        self.conn = sqlite3.connect(db)
+        self.cur = self.conn.cursor()
+        self.cur.execute(
+            "CREATE TABLE IF NOT EXISTS book (id INTEGER PRIMARY KEY, title text, author text, year integer, isbn integer)")
+        self.conn.commit()
+ 
+    # instance method
+    def insert(self, title, author, year, isbn):
+        self.cur.execute("INSERT INTO book VALUES (NULL,?,?,?,?)",
+                         (title, author, year, isbn))
+        self.conn.commit()
+
+    # instance method
+    def view(self):
+        self.cur.execute("SELECT * FROM book")
+        rows = self.cur.fetchall()
+        return rows
+
+    # instance method
+    def search(self, title="", author="", year="", isbn=""):
+        self.cur.execute("SELECT * FROM book WHERE title=? OR author=? OR year=? OR isbn=?",
+                         (title, author, year, isbn))
+        rows = self.cur.fetchall()
+        return rows
+
+    # instance method
+    def delete(self, id):
+        self.cur.execute("DELETE FROM book WHERE id=?", (id,))
+        self.conn.commit()
+
+    # instance method
+    def update(self, id, title, author, year, isbn):
+        self.cur.execute(
+            "UPDATE book SET title=?, author=?, year=?, isbn=? WHERE id=?", (title, author, year, isbn, id))
+        self.conn.commit()
+
+    def __del__(self):
+        self.conn.close()
+
+-------------------------------------------------------------
+frontend.py
+-------------------
+from tkinter import *
+from backend import Database
+
+# to create an instance:
+database = Database("books.db")
+
+def get_selected_row(event):
+    try:
+        # the global keyword will define variable to be accessable in all over the file
+        global selected_tuple
+        index = list1.curselection()[0]
+        selected_tuple = list1.get(index)
+        e1.delete(0, END)
+        e1.insert(END, selected_tuple[1])
+        e2.delete(0, END)
+        e2.insert(END, selected_tuple[2])
+        e3.delete(0, END)
+        e3.insert(END, selected_tuple[3])
+        e4.delete(0, END)
+        e4.insert(END, selected_tuple[4])
+    except IndexError:
+        pass
+
+def view_command():
+    # at first, we delete old data and then fetch fresh data.
+    list1.delete(0, END)
+    for row in database.view():
+        # 'END' means that the new row will be added to the end of the list.
+        list1.insert(END, row)
+
+def search_command():
+    list1.delete(0, END)
+    for row in database.search(title_text.get(), author_text.get(), year_text.get(), isbn_text.get()):
+        list1.insert(END, row)
+
+def add_command():
+    database.insert(title_text.get(), author_text.get(),
+                    year_text.get(), isbn_text.get())
+    list1.delete(0, END)
+    list1.insert(END, (title_text.get(), author_text.get(),
+                       year_text.get(), isbn_text.get()))
+
+def delete_command():
+    database.delete(selected_tuple[0])
+
+def update_command():
+    database.update(selected_tuple[0], title_text.get(), author_text.get(),
+                    year_text.get(), isbn_text.get())
+
+window = Tk()
+
+window.wm_title("BookStore")
+
+l1 = Label(window, text="Title")
+l1.grid(row=0, column=0)
+l2 = Label(window, text="Author")
+l2.grid(row=0, column=2)
+l3 = Label(window, text="Year")
+l3.grid(row=1, column=0)
+l4 = Label(window, text="ISBN")
+l4.grid(row=1, column=2)
+
+title_text = StringVar()
+e1 = Entry(window, textvariable=title_text)
+e1.grid(row=0, column=1)
+
+author_text = StringVar()
+e2 = Entry(window, textvariable=author_text)
+e2.grid(row=0, column=3)
+
+year_text = StringVar()
+e3 = Entry(window, textvariable=year_text)
+e3.grid(row=1, column=1)
+
+isbn_text = StringVar()
+e4 = Entry(window, textvariable=isbn_text)
+e4.grid(row=1, column=3)
+
+list1 = Listbox(window, height=6, width=35)
+list1.grid(row=2, column=0, rowspan=6, columnspan=2)
+
+sb1 = Scrollbar(window)
+sb1.grid(row=2, column=2, rowspan=6)
+
+list1.configure(yscrollcommand=sb1.set)
+sb1.configure(command=list1.yview)
+
+# we bind a method to an element. then in that method, we have access to the event, to listen to it.
+list1.bind('<<ListboxSelect>>', get_selected_row)
+
+b1 = Button(window, text="View all", width=12, command=view_command)
+b1.grid(row=2, column=3)
+
+b2 = Button(window, text="Search Entry", width=12, command=search_command)
+b2.grid(row=3, column=3)
+
+b3 = Button(window, text="Add Entry", width=12, command=add_command)
+b3.grid(row=4, column=3)
+
+b4 = Button(window, text="Update selected", width=12, command=update_command)
+b4.grid(row=5, column=3)
+
+b5 = Button(window, text="Delete selected", width=12, command=delete_command)
+b5.grid(row=6, column=3)
+
+b6 = Button(window, text="Close", width=12, command=window.destroy)
+b6.grid(row=7, column=3)
+
+window.mainloop()
+
+-------------------------------------------------------------
+
+*** executable file ***
+create and executable file for this program
+
+---
+$ pip install pyinstaller
+---
+
+then, point to the file that your main code exists in:
+---
+$ pyinstaller --onefile --windowed frontend.py
+---
+
+
+******************************
+**** Mobile App with Kivy ****
+******************************
+-------------------------------------------------
+main.py
+------------------
+from kivy.app import App    # initialize the app
+from kivy.lang import Builder  # it connects python file to kivy
+from kivy.uix.screenmanager import ScreenManager, Screen
+from datetime import datetime
+import json
+
+Builder.load_file('design.kv')
+
+
+class LoginScreen(Screen):
+    def sign_up(self):
+        self.manager.current = "sign_up_screen"
+
+    def login(self, uname, pword):
+        with open("users.json") as file:
+            users = json.load(file)
+        if uname in users and users[uname]['password'] == pword:
+            self.manager.current = "login_screen_success"
+        else:
+            self.ids.login_wrong.text = "Wrong username or password"
+
+
+class LoginScreenSuccess(Screen):
+    def log_out(self):
+        self.manager.transition.direction = "right"
+        self.manager.current = "login_screen"
+
+
+class RootWidget(ScreenManager):
+    pass
+
+
+class SignUpScreen(Screen):
+    def add_user(self, uname, pword):
+        with open("users.json") as file:
+            users = json.load(file)
+        print(users)
+
+        users[uname] = {'username': uname,
+                        'password': pword, 'created': datetime.now()}
+
+        with open("users.json", "w") as file:
+            json.dump(users, file)
+        self.manager.current = "sing_up_screen_success"
+
+
+class SingUpScreenSuccess(Screen):
+    def go_to_login(self):
+        self.manager.transition.direction = "right"
+        self.manager.current = "login_screen"
+
+
+class MainApp(App):
+    def build(self):
+        return RootWidget()
+
+
+if __name__ == "__main__":
+    MainApp().run()
+
+-------------------------------------------------
+design.kv
+------------------
+#:kivy 1.0
+# adding a rule ->
+<LoginScreen>:
+    # here is a grid area that includes all the widgets 
+    GridLayout:
+        cols: 1
+        GridLayout:
+            cols: 1
+            Label:
+                text: "User Login"
+            TextInput:
+                id: username
+                hint_text: "Username"
+            TextInput:
+                id: password
+                hint_text: "Password"
+            Button:
+                text: "Login"
+                on_press: root.login(root.ids.username.text, root.ids.password.text)
+            Label:
+                id: login_wrong
+                text: ""
+        GridLayout:
+            cols: 2
+            Button:
+                text: "Forgot Password?"
+            Button:
+                text: "Sign Up"
+                on_press: root.sign_up()
+
+# create another screen
+<SignUpScreen>
+    GridLayout:
+        cols: 1
+        Label:
+            text: "Sign up for a space journey!"
+        TextInput:
+            id: username
+            hint_text: "Username"
+        TextInput:
+            id: password
+            hint_text: "Password"
+        Button:
+            text: "Submit"
+            on_press: root.add_user(root.ids.username.text, root.ids.password.text)
+            
+<SingUpScreenSuccess>:
+     GridLayout:
+        cols: 1
+        Label:
+            text: "Sign up successful!"
+        Button:
+            text: "Login page"
+            on_press: root.go_to_login()
+        Label:
+            text: "How do you feel?"
+        TextInput:
+            id: password
+            hint_text: "Things to try: happy, sad, unloved..."
+        Button:
+            text: "Enlighten me"
+            # on_press: root.go_to_login()
+        Label:
+            text: ""
+        
+<LoginScreenSuccess>:
+    GridLayout:
+        cols: 1
+        Button:
+            text: "Logout"
+            on_press: root.log_out()
+# RootWidget keeps the records of all screens of the app
+# so we should bring all screens under 'RootWidget'
+<RootWidget>:
+    LoginScreen:
+        name: "login_screen"
+    SignUpScreen:
+        name: "sign_up_screen"
+    SingUpScreenSuccess:
+        name: "sing_up_screen_success"
+    LoginScreenSuccess:
+        name: "login_screen_success"
+-------------------------------------------------
+
+
+*******************************************
+*** Computer Vision - Image Proccessing ***
+*******************************************
+computers (Python) use the same command to proccess images and videos.
+we can do the computer vidion with python, using opencv library.
+----------------------------------------------------------------
+import cv2
+
+# raead the image. 'imread()' takes these arguments.
+# 1) filename 2) how we want to read this image. (Black&White=0, RGB=1, colorImage=-1)
+# if we set it to '0', we have only 1 band
+img = cv2.imread('galaxy.jpg', 0)
+print(img)    # 2 dimensional array
+# [[14 18 14 ... 20 15 16]
+#  [12 16 12 ... 20 15 17]
+#  [12 13 16 ... 14 24 21]
+#  ...
+#  [ 0  0  0 ...  5  8 14]
+#  [ 0  0  0 ...  2  3  9]
+#  [ 1  1  1 ...  1  1  3]]
+
+print(img.shape)
+# (1485, 990)   # width and height (px)
+
+print(img.ndim)
+# 2              # number of dimensional array
+
+##################################################
+
+# img = cv2.imread('galaxy.jpg', 1)
+# print(img)       # 3 dimensional array
+
+# [[[19 15 10]
+#   [23 19 14]
+#   [21 15  8]
+#   ...
+#   [27 22 13]
+#   [22 17  8]
+#   [23 18  9]]
+
+#  [[17 13  8]
+#   [21 17 12]
+#   [19 13  6]
+#   ...
+#   [27 22 13]
+#   [22 17  8]
+#   [24 19 10]]
+
+#  [[17 14  6]
+#   [18 15  7]
+#   [21 18 10]
+#   ...
+#   [23 16  7]
+#   [33 26 17]
+#   [30 23 14]]
+
+#  ...
+
+#  [[ 0  0  0]
+#   [ 0  0  0]
+#   [ 0  0  0]
+#   ...
+#   [ 5  5  5]
+#   [ 8  8  8]
+#   [14 14 14]]
+
+#  [[ 0  0  0]
+#   [ 0  0  0]
+#   [ 0  0  0]
+#   ...
+#   [ 2  2  2]
+#   [ 3  3  3]
+#   [ 9  9  9]]
+
+#  [[ 1  1  1]
+#   [ 1  1  1]
+#   [ 1  1  1]
+#   ...
+#   [ 1  1  1]
+#   [ 1  1  1]
+#   [ 3  3  3]]]
+
+print(img.shape)
+# (1485, 990, 3)   # width and height (px)
+
+print(img.ndim)
+# 3                # number of dimensional array
+
+##################################################
+
+# define new width and height for img
+resized_image = cv2.resize(img, (500, 1000))
+resized_image = cv2.resize(img, (int(img.shape[1]/2), int(img.shape[0]/2)))
+
+# To display the image on the screen:
+# first put the title for the window we wnat to display the image on.
+cv2.imshow("Galaxy", resized_image)
+
+# save the new image:
+cv2.imwrite("Galaxy_resized.jpg", resized_image)
+
+# specify a time for window to be closed.
+cv2.waitKey()
+
+# if you put '0' here, when user press any button, the window gets closed.
+cv2.waitKey(0)
+
+# it takes 2000 miliseconds.
+cv2.waitKey(2000)
+
+# after 2000 miliseconds, the window will be closed.
+cv2.destroyAllWindows()
+
+----------------------------------------------------------------
+
+*** work with images in for() loop ***
+
+---------------------------------------
+import cv2
+import glob
+
+# the glob library finds the path name to a file
+# line below, creates a list of file names that contain '.jpg' after them
+images = glob.glob("*.jpg")
+
+for image in images:
+    img = cv2.imread(image, 0)
+    re = cv2.resize(img, (100, 100))
+    cv2.imshow("Hey", re)
+    cv2.waitKey(500)
+    cv2.destroyAllWindows()
+    cv2.imwrite("resized_"+image, re)
+---------------------------------------
+
+**********************
+*** Face Detection ***
+**********************
+
+someone has created some XML files that contains information of features that an image with a face, contains.
+https://github.com/opencv/opencv/tree/master/data/haarcascades
+
+
+*** Detecting Image ***
+
+-------------------------------------------------------------
+import cv2
+
+face_cascade = cv2.CascadeClassifier("./haarcascade_frontalface_default.xml")
+
+# take the original image:
+img = cv2.imread("photo.jpg")
+
+# convert the image into gray scale image.
+gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+# we want to take the coordinate of upper-left pixel which the pixels of the face, starting.
+# then takes the width and height of the face.
+# we're gonna tell the python that once it found the face, it should decrease the scale
+# by 5% for the next face search (scaleFactor=1.05)
+# the smaller value, gives us higher accuracy.
+# and (minNeighbors=5) -> it tells python, how many neighbors to search around the window
+faces = face_cascade.detectMultiScale(
+    gray_img, scaleFactor=1.05, minNeighbors=5)
+
+print(faces)    # [[157  84 379 379]]
+# so the starting point is (157px, 84px) and the width is 379 and height is 379
+
+for x, y, w, h in faces:
+    # updating the image but with drawing a rectangle
+    # the 'cv2.rectangle()' method, takes the image + starting point + ending pont + color + width of rectangle
+    img = cv2.rectangle(img, (x, y), (x+w, y+h), (0, 255, 0), 3)
+
+resized = cv2.resize(img, (int(img.shape[1]/3), int(img.shape[0]/3)))
+
+cv2.imshow("Gray", resized)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+
+-------------------------------------------------------------
+
+*** Detecting Video by webcam ***
+
+we should read frames (images) one by one and loop through them.
+-------------------------------------------------------------
+import cv2
+import time
+
+# open camera:
+# it takes video file_path or numbers which represents the index of camera that are connected to our pc.
+video = cv2.VideoCapture(0)
+
+while True:
+    # specify a window to represent the webcam camera
+    # 'check' is boolean and 'frame' is numbpy array
+    check, frame = video.read()
+    print(check)
+    print(frame)
+
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    cv2.imshow("Capturing", gray)
+
+    # it capture a frame, every 1 miliseconds
+    key = cv2.waitKey(1)
+    # if you press the 'q', the while loop will be finished.
+    if key == ord('q'):
+        break
+
+# release (Quit) the camera:
+video.release()
+cv2.destroyAllWindows()
+
+-------------------------------------------------------------
+
+
+*** intract moving objects - motion detector ***
+
+at first python will scan the first frame. then it applies 'cv2.COLOR_BGR2GRAY' method
+and make it gray. 
+in order to make a motion detector, we should look at the resulted dataframe.
+if we saw a difference more than 100 intensity, in that frame, we should convert those
+pixels to completely white pixels.
+then we consider the group of changed pixels as a contours. if in a for loop,
+we see if the area of contours is more than 500px, then consider it as a moving object.
+then we draw a rectangle around that.
+-------------------------------------------------------------
+import cv2
+import time
+import pandas
+from datetime import datetime
+
+
+first_frame = None
+status_list = [None, None]
+times = []
+df = pandas.DataFrame(columns=["Start", "End"])
+video = cv2.VideoCapture(0)
+
+while True:
+    check, frame = video.read()
+    status = 0
+
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    # make the fram, blur. then pass the width and height of kernal blured image.
+    gray = cv2.GaussianBlur(gray, (21, 21), 0)
+
+    if first_frame is None:
+        first_frame = gray
+        continue    # other lines won't get executed
+
+    # check the difference between 'first_frame' and 'gray'
+    delta_frame = cv2.absdiff(first_frame, gray)
+
+    # convert all pixels with more than 30 color, to white (255)
+    thresh_frame = cv2.threshold(delta_frame, 30, 255, cv2.THRESH_BINARY)[1]
+
+    # make the threshold frame, smoother.
+    # 'iterations' says, how many times it should scan the image.
+    # the bigger iteration is, the smoother the image will be
+    thresh_frame = cv2.dilate(thresh_frame, None, iterations=2)
+
+    # create contours for threshold frames.
+    # store the copy of threshold frames in contours in tuple
+    (cnts, _) = cv2.findContours(thresh_frame.copy(),
+                                 cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # if compiler found a contour which is less than 10000 pixels, it should go to the next contour.
+    # the more this number is, the bigger objects will be detected.
+    for contour in cnts:
+        if cv2.contourArea(contour) < 10000:
+            continue
+        status = 1  # means at least a motion is detected
+
+        # creating a tuple for drawing rectangle.
+        (x, y, w, h) = cv2.boundingRect(contour)
+        cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 3)
+
+    status_list.append(status)  # a list of all status
+
+    # record the time when the status changes to 1
+    if status_list[-1] == 1 and status_list[-2] == 0:
+        times.append(datetime.now())
+    # record the time when the status changes to 0
+    if status_list[-1] == 0 and status_list[-2] == 1:
+        times.append(datetime.now())
+
+    cv2.imshow("Gray Frame", gray)
+    cv2.imshow("Delta Frame", delta_frame)
+    cv2.imshow("Threshold Frame", thresh_frame)
+    cv2.imshow("Color Frame", frame)
+
+    key = cv2.waitKey(1)
+
+    if key == ord('q'):
+        if status == 1:
+            times.append(datetime.now())
+        break
+
+print(status_list)
+
+# to iterate with the step of '2', we need to use range()
+# range(0, len(times), 2) -> means: you start from zero untill the length of the times list with a step of '2'
+for i in range(0, len(times), 2):
+    df = df.append({"Start": times[i], "End": times[i+1]}, ignore_index=True)
+
+
+# extract dataframe to CSV file
+df.to_csv("Times.csv")
+
+video.release()
+cv2.destroyAllWindows()
+
+-------------------------------------------------------------
+
+
+*************************************
+*** Data Visualization with Bokeh ***
+*************************************
+
+use jupyter
+------------------------------------------------
+from bokeh.plotting import figure
+from bokeh.io import output_file, show
+
+x = [1, 2, 3, 4, 5]
+y = [6, 7, 8, 9, 10]
+
+output_file("Line.html")
+
+f = figure()
+
+# f.line(x,y)
+f.line(x, y, legend_label="Temp.", line_color="blue", line_width=2)
+f.line(x, y, legend_label="Rate", line_color="red", line_width=2)
+f.vbar(x=x, top=y, legend_label="Rate", width=0.2, bottom=0, color="red")
+f.circle(x, y, legend_label="Objects", line_color="yellow", size=12)
+show(f)
+------------------------------------------------
+
+*********************
+*** Web Scrapping ***
+*********************
+there is a library named 'BeautifulSoup' (bs4)
+---
+$ pip install requests
+$ pip install bs4   
+-----------------------------------------------------
+import requests
+from bs4 import BeautifulSoup
+
+# send a get request to get all website html data
+r = requests.get("http://pythonhow.com/example.html")
+# store all HTML codes in a variable
+c = r.content
+
+# parse all html data, so the source of the page will be given.
+soup = BeautifulSoup(c, "html.parser")
+
+# find all divs with specific class -> it returns a list of all these divs
+all = soup.find_all("div",{"class":"cities"})
+
+# find the first matching div with a class -> it returns the exact div tag
+all = soup.find("div",{"class":"cities"})
+
+# find the text of first h2 in the list
+all[0].find_all("h2")[0].text
+
+# find all paragraph
+for item in all:
+    print(item.find_all("p")[0].text)
+    
+    try:
+        # inside the span tag, we should find the 'b' tag, and then its text.        
+        print(item.find("span", {"class", "infoBed"}).find("b").text)
+    except:
+        pass
+    try:
+        print(item.find("span", {"class", "infoSqFt"}).find("b").text)
+    except:
+        pass
+    try:
+        print(item.find("span", {"class", "infoValueFullBath"}).find("b").text)
+    except:
+        pass
+    try:
+        print(item.find("span", {"class", "infoValueHalfBath"}).find("b").text)
+    except:
+        pass
+-----------------------------------------------------
+
+
+**************************************************
+*** web application - backend sending requests ***
+**************************************************
+
+-------------------------------
+from flask import Flask, render_template, requests
+# import requests
+
+app = Flask(__name__)
+
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+
+@app.route("/success", methods=['POST'])
+def success():
+    if requests.method == "POST":
+        email = request.form["email_name"]
+        return render_template("success,html")
+
+
+if __name__ == '__main__':
+    app.debug = True
+    app.run()
+
+-------------------------------
+
+************************
+** pandas_datareader ***
+************************
+
+---
+$ pip install pandas_datareader
+---
+
+from pandas_datareader import data
+
+---
+
+//////////////////////////////////////////////
+/// Testing in Python using doctest module ///
+//////////////////////////////////////////////
+
+We know docstring gives extra information about the function and classes in Python. 
+We can also use it for testing of the functions using the doctest module. 
+The doctest modules execute the code which starts with >>> and compares it against the expected output.
+
+Follow the below steps to write a function with doctest.
+
+    Import the doctest module.
+
+    Write the function with docstring. Inside the docstring, 
+    write the following two lines for testing of the same function.
+
+        >>>function_name(*args).
+
+        Expected output.
+
+    Write the function code.
+
+    Now, call the doctest.testmod(name=function_name, verbose=True) function for testing. 
+    We can't see the test results if the verbose set to False and all tests are passed. 
+    It's better to set it as True.
+---------------
+# Explanation - use ''' to start the doc and add output of the cell after >>>
+---------------
+# importing the module
+import doctest
+# function
+def numbers_sum(*args) -> int:
+   """
+   This function returns the sum of all the argumets
+   Shell commands for testing
+   incoking the function followed by expected output:
+   >>> numbers_sum(1, 2, 3, 4, 5)
+   15
+   >>> numbers_sum(6, 7, 8)
+   21
+   """
+   return sum(args)
+# invoking the testmod function
+doctest.testmod(name='numbers_sum', verbose=True)
+---------------
+Output:
+
+Trying:
+numbers_sum(1, 2, 3, 4, 5)
+Expecting:
+15
+ok
+Trying:
+numbers_sum(6, 7, 8)
+Expecting:
+21
+ok
+1 items had no tests:
+numbers_sum
+1 items passed all tests:
+2 tests in numbers_sum.numbers_sum
+2 tests in 2 items.
+2 passed and 0 failed.
+Test passed.
+TestResults(failed=0, attempted=2)
+
+
+///////////////////////
+//////  Summary  //////
+///////////////////////
+
+Dictionary:
+student_grades = {"Marry": 9.1, "Sim": 8.8, "John": 7.5}
+mysum = sum(student_grades.values())
+print(mysum / len(student_grades))
+
+# this is a list:
+monday_temperature = [1, 4, 5]
+# and this is a tuple:
+monday_temperature = (1, 4, 5)
+
+lists are mutable, tuples are imutable
+
+monday_temperature = [1, 4, 5]
+monday_temperature.append(6)
+print(monday_temperature)   # [1, 4, 5, 6]
+monday_temperature.remove(4)
+print(monday_temperature)   # [1, 5, 6]
+
+>>> dir(list)
+'append', 'clear', 'copy', 'count', 'extend', 'index', 'insert', 'pop', 'remove', 'reverse', 'sort'
+
+monday_temperature = [1, 4, 5, 6, 7, 8]
+print(monday_temperature[1:4])  # [4, 5, 6]
+>>> monday_temperature[:4]
+>>> monday_temperature[4:]
+>>> monday_temperature[-1]
+>>> monday_temperature[-3]
+>>> monday_temperature[-3:]
+>>> monday_temperature[-4:-2]
+
+take the characters of a string
+>>> mystring="hello"
+>>> mystring[0]
+>>> mystring[-1]
+>>> mystring[:3]
+
+get values of an object / dictionaries:
+>>> student_grades = {"Marry": 9.1, "Sim": 8.8, "John": 7.5}
+>>> student_grades["Sim"]
+8.8
+
+Functions:
+
+def mean(mylist):
+    the_mean = sum(mylist) / len(mylist)
+    return the_mean
+
+print(mean([1, 4, 6]))      # 3.6666666666666665
+print(type(mean))           # <class 'function'>
+
+---
+def mean(value):
+    if type(value) == dict:
+        the_mean = sum(value.values()) / len(value)
+    else:
+        the_mean = sum(value) / len(value)
+    return the_mean
+
+
+myDict = {"Marry": 9.1, "Sim": 8.8, "John": 7.5}
+mylist = [1, 4, 6]
+print(mean(myDict))
+print(mean(mylist))
+---
+else if == elif
+
+How to get value from user? with input() function
+whatever the user inserts as input, Python will transfer it into string!!!
+convert the by int() or float()
+
+userInput = int(input("Enter the Tempreture: "))
+print(weather_condition(userInput))
+
+name = input("Your name? ")
+surname = input("Your surname? ")
+print("hello %s %s!" % (name, surname))
+print(f"hello {name} {surname}!")
+print("hi, {}".format(inputuser))
+
+txt = "how are you"
+print("{}?".format(txt))
+
+monday_temperatures = [9.1, 8.8, 7.6]
+for item in monday_temperatures:
+    print(round(item))
+
+student_grades = {"Marry": 9.1, "Sim": 8.8, "John": 7.5}
+for item in student_grades.values():
+    print(round(item))
+
+for item in student_grades.items():
+    print(round(item))
+
+# iterating in 2 or more arrays at a same time, by using zip():
+for i, j in zip([1,2,3], [4,5,6]):
+    print(i, "and", j)
+
+username = ""
+while username != "pypy":
+    username = input("Enter username: ")
+
+while True:
+    username = input("Enter username: ")
+    if username == "pypy":
+        break
+    else:
+        continue
+
+"how are you".startswith(("how", "what", "when"))   # returns True
+"hi there".capitalize()     # returns "Hi there"
+
+list = ["hi there", "how are you"]
+txt1 = " ".join(list)
+txt2 = "-".join(list)
+print(txt1)      # returns "hi there how are you"
+print(txt2)      # returns "hi there-how are you"
+
+
+def ConvertInput():
+    user_input = ""
+    inputs = []
+    while user_input != "\end":
+        user_input = input("Say something: ")
+        if user_input == "\end":
+            break
+        words = user_input.split()
+        firstWord = words[0].lower()
+        if firstWord == 'what' or firstWord == 'where' or firstWord == 'how' or firstWord == 'when' or firstWord == 'why':
+            user_input = user_input + "?"
+        else:
+            user_input = user_input + "."
+        inputs.append(user_input)
+    return inputs
+
+
+def justifyStr(inputs):
+    str = ""
+    for item in inputs:
+        str = str + " " + item
+    return str
+
+
+inputs = ConvertInput()
+string = justifyStr(inputs)
+print(string)
+
+---
+let's say we want to iterate the array and divide all numbers by 10.
+
+temps = [221, 234, 340, 230]
+1. 1st approach:
+new_temps = []
+for temp in temps:
+    new_temps.append(temp / 10)
+
+2. 2nd approach:
+print([temp / 10 for temp in temps])
+
+3. 3rd approach: (conditional)
+print([temp / 10 for temp in temps if temp != -9999])
+
+def area(a, b):
+    return a * b
+
+print(area(4, 5))
+print(area(b = 4, a = 5))
+
+default value:
+def area(a, b = 5):
+    return a * b
+
+print(area(4))              # 20
+print(area(a = 4))          # 20
+print(area(a = 4, b = 7))   # 35
+
+def mean(*args):
+    print(args)
+
+mean(1, 2, 'a', 4, 5)     # returns a tuple: (1, 2, 'a', 4, 5)
+mean(1, 2, x = 3, 4, 5)     # doesn't work.
+
+
+def mean(**kwargs):
+    return kwargs
+
+print(mean(1, 2, 3))        # TypeError: mean() takes 0 positional arguments but 3 were given
+
+def mean(**kwargs):
+    return kwargs
+
+print(mean(a=1, b=2, c=3))   # returns: {'a': 1, 'b': 2, 'c': 3}
+---
+
+myfile = open("fruit.txt")
+print(myfile.read())
+
+with open("./vegtables.txt","w") as myFile:
+    myFile.write("Tomato")
+
+with open("./vegtables.txt", "a+") as myFile:
+    myFile.write("\nTomato\nCucumber")
+    content = myFile.read()
+
+print(content)
+
+
+import time
+while True:
+    with open("./vegtables.txt", "r") as myFile:
+        print(myFile.read())
+        time.sleep(10)
+
+>>> os.path.exists("./fruit.txt")
+True
+
+install third party libraries with 'pip'
+% pip3 install pandas
+
+import os
+import time
+import pandas
+
+data = pandas.read_csv("./087 temps-today.csv")
+print(data.mean()["st1"])
+
+Connectiong to mySQL database
+% pip3 install mysql-connector-python
+
+import mysql.connector
+
+con = mysql.connector.connect(
+    user="ardit700_student",
+    password="ardit700_student",
+    host="108.167.140.122",
+    database="ardit700_pm1database"
+)
+
+# query some data: use the cursor object
+cursor = con.cursor()
+query = cursor.execute("SELECT * FROM Dictionary")
+
+query = cursor.execute("SELECT * FROM Dictionary WHERE Expression = 'inlay'")
+results = cursor.fetchall()
+
+if results:
+    for result in results:
+        print(results[1])
+else:
+    print("no word found!")
+
+# DataFrame structure:
+df1 = pandas.DataFrame([[2, 4, 6], [10, 20, 30]],
+                       columns=["Price", "Age", "Value"], index=["First", "Second"])
+print(df1)
+#         Price  Age  Value
+# First       2    4      6
+# Second     10   20     30
+
+
+
+
