@@ -1,0 +1,88 @@
+# We should define different container_name so we can find them in same network. nextapp, flaskapp, and db.
+
+services:
+# For developement, use $ npm run dev
+# For production, uncomment the following code.
+
+  #nextjs service
+  nextapp:
+    container_name: nextapp
+    image: nextapp:1.0.0
+    build:
+      context: ./frontend
+      dockerfile: next.dockerfile
+    ports:
+      - 3000:3000
+    environment:
+    - NEXT_PUBLIC_API_URL=http://localhost:4000
+    depends_on:
+      - flaskapp
+
+  # We use "build: context:" because the flask.dockerfile were in the backend folder. not in the root.
+  # flask service
+  flaskapp:
+    container_name: flaskapp
+    image: flaskapp:1.0.0
+    build:
+      context: ./backend
+      dockerfile: flask.dockerfile
+    ports:
+      - 4000:4000
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
+    depends_on:
+      - db
+
+# db service
+  db:
+    container_name: db
+    image: postgres:13
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - 5432:5432
+    volumes: # Where we want to use the volumns
+      - pgdata:/var/lib/postgresql/data
+
+volumes: # we define the volumes.
+  pgdata: {}
+
+# We used "postgres" fpr username, passowrd, and db, so we won't mess up.
+
+# to run the container we should write:
+# $ docker compose up -d db
+
+# To check the running dockers:
+# $ docker ps -a
+
+# To check what are inside in the postgres container:
+# $ docker exec -it db psql -U postgres
+
+# Now, if you write this below, you can see list of databases:
+# $ \l
+
+# and to check the data and relations of the database:
+# $ \dt
+
+# to build the flaskapp docker:
+# $ docker compose build flaskapp
+# to run the container we should write:
+# $ docker compose up -d flaskapp
+
+# Now, we can check the url request using postman.
+
+# if now we write: 
+# $ docker exec -it db psql -U postgres
+# postgres=# \dt
+#          List of relations
+#  Schema | Name  | Type  |  Owner   
+# --------+-------+-------+----------
+#  public | users | table | postgres
+# (1 row)
+
+# postgres=# select * from users;
+#  id | name | email 
+# ----+------+-------
+# (0 rows)

@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flaskapp
+  namespace: my-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: flaskapp
+  template:
+    metadata:
+      labels:
+        app: flaskapp
+    spec:
+      containers:
+      - name: flaskapp
+        image: armanfeili/flaskapp:latest
+        ports:
+        - containerPort: 4000
+        env:
+        - name: DATABASE_URL
+          value: postgresql://postgres:postgres@db-service:5432/postgres
+        resources:
+          requests:
+            memory: "500Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 4000
+          initialDelaySeconds: 60
+          timeoutSeconds: 5
+          periodSeconds: 200
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 4000
+          initialDelaySeconds: 60
+          timeoutSeconds: 5
+          periodSeconds: 200
+          failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flaskapp-service
+  namespace: my-app
+spec:
+  type: LoadBalancer
+  selector:
+    app: flaskapp
+  ports:
+  - protocol: TCP
+    port: 4000
+    targetPort: 4000
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: flaskapp-hpa
+  namespace: my-app
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: flaskapp
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
