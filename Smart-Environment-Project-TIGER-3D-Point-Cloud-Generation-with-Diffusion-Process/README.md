@@ -1,5 +1,11 @@
 # Smart Environment Final Project
 
+Code to our project on Github:
+- https://github.com/armanfeili/Sapienza-DS-projects/tree/main/Smart-Environment-Project-TIGER-3D-Point-Cloud-Generation-with-Diffusion-Process
+
+Link to Drive (to see 3D visualization):
+- https://colab.research.google.com/drive/1h3IXN14ofCPI0jWxp-vPF8unDqENv_hf?usp=sharing
+
 Professors:
 - Prof. Francesca Cuomo
 - Prof. Stefania Colonnese
