@@ -3,11 +3,11 @@
 ## About Me
 
 **Arman Feili**
-MS. Data Scientist, Full Stack Developer
-Rome, Italy
-Email: [feili.2101835@studenti.uniroma1.it](mailto:feili.2101835@studenti.uniroma1.it)
-Phone: (+39) 379 175 6660
-GitHub: armanfeili
+- MS. Data Scientist, Full Stack Developer
+- Rome, Italy
+- Email: [feili.2101835@studenti.uniroma1.it](mailto:feili.2101835@studenti.uniroma1.it)
+- Phone: (+39) 379 175 6660
+- GitHub: armanfeili
 
 I am a Data Scientist and Full-Stack Developer with over four years of experience building scalable, ML-driven applications that integrate machine learning with modern web technologies. Currently pursuing my MSc in Data Science at Sapienza University of Rome, I have worked in fields such as federated learning, bioinformatics, and cloud-native development. I will soon begin a 6-month thesis at CINECA on “AI-Powered Natural Language Query for Databases.” I am open to job opportunities and paid internships alongside my thesis.
 
@@ -20,7 +20,6 @@ I am a Data Scientist and Full-Stack Developer with over four years of experienc
 * Other: Web Scraping, Overleaf, MS Office, Blockchain
 * Languages: English (B2), Italian (A1), Persian (Native)
 
----
 
 ## Repository Overview
 
