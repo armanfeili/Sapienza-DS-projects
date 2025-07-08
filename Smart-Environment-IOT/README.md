@@ -10,25 +10,12 @@ Professors:
 - Prof. Francesca Cuomo
 - Prof. Stefania Colonnese
 
-Team members:
+Student:
 
-1.
-- Name: Syed Habibul
-- Surname: Bashar
-- Matricola: 2102742
-- Email: bashar.2102742@studenti.uniroma1.it
-
-2.
 - Name: Arman
 - Surname: Feili
 - Matricola: 2101835
 - Email: feili.2101835@studenti.uniroma1.it
-
-3.
-- Name: Aysegul Sine
-- Surname: Ozgenkan
-- Matricola: 2108754
-- Email: ozgenkan.2108754@studenti.uniroma1.it
 
 Paper:
 - https://openaccess.thecvf.com/content/CVPR2024/papers/Ren_TIGER_Time-Varying_Denoising_Model_for_3D_Point_Cloud_Generation_with_CVPR_2024_paper.pdf
@@ -738,17 +725,10 @@ should install everything needed.
 
 * **Authors / Team Members**
 
-  1. Syed Habibul Bashar ([bashar.2102742@studenti.uniroma1.it](mailto:bashar.2102742@studenti.uniroma1.it))
-  2. Arman Feili ([feili.2101835@studenti.uniroma1.it](mailto:feili.2101835@studenti.uniroma1.it))
-  3. Aysegul Sine Ozgenkan ([ozgenkan.2108754@studenti.uniroma1.it](mailto:ozgenkan.2108754@studenti.uniroma1.it))
+  - Arman Feili ([feili.2101835@studenti.uniroma1.it](mailto:feili.2101835@studenti.uniroma1.it))
 
 * **Corresponding Paper**
   Ren, Z., Chen, X., Li, Y., & Giannakis, G. B. (2024).
   TIGER: Time‐Varying Denoising Model for 3D Point Cloud Generation with Diffusion Process, CVPR 2024.
   PDF: [https://openaccess.thecvf.com/content/CVPR2024/papers/Ren\_TIGER\_Time-Varying\_Denoising\_Model\_for\_3D\_Point\_Cloud\_Generation\_with\_CVPR\_2024\_paper.pdf](https://openaccess.thecvf.com/content/CVPR2024/papers/Ren_TIGER_Time-Varying_Denoising_Model_for_3D_Point_Cloud_Generation_with_CVPR_2024_paper.pdf)
 
-If you use TIGER or parts of this code in your work, please cite the above CVPR 2024 paper.
-
----
-
-Thank you for exploring TIGER! If you find bugs, have questions, or want to suggest improvements, please open an issue or submit a pull request.
