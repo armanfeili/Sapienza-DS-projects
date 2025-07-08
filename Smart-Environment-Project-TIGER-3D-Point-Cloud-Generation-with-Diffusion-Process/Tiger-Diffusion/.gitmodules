@@ -1,3 +1,0 @@
-[submodule "metrics/ChamferDistancePytorch"]
-	path = metrics/ChamferDistancePytorch
-	url = https://github.com/ThibaultGROUEIX/ChamferDistancePytorch
