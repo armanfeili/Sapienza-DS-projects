@@ -1,83 +1,51 @@
-# Sapienza-DS-Projects
+# Sapienza-DS-Projects - Project Portfolio – Arman Feili
 
-🚀 A portfolio of academic and real-world projects by **Arman Feili**, MSc Data Science candidate at **Sapienza University of Rome**, Full-Stack Developer, and AI Engineer with over four years of experience building ML-powered web applications.
+## About Me
 
----
+**Arman Feili**
+MS. Data Scientist, Full Stack Developer
+Rome, Italy
+Email: [feili.2101835@studenti.uniroma1.it](mailto:feili.2101835@studenti.uniroma1.it)
+Phone: (+39) 379 175 6660
+GitHub: armanfeili
 
-## 👨‍💻 About Me
+I am a Data Scientist and Full-Stack Developer with over four years of experience building scalable, ML-driven applications that integrate machine learning with modern web technologies. Currently pursuing my MSc in Data Science at Sapienza University of Rome, I have worked in fields such as federated learning, bioinformatics, and cloud-native development. I will soon begin a 6-month thesis at CINECA on “AI-Powered Natural Language Query for Databases.” I am open to job opportunities and paid internships alongside my thesis.
 
-I'm a Data Scientist and Full-Stack Developer with expertise in scalable software systems, machine learning pipelines, and advanced web development. Currently pursuing my MSc in Data Science, I am conducting my thesis at **CINECA** on:
+**Key Skills:**
 
-> **“AI-Powered Natural Language Query for Databases”**  
-> Building intelligent interfaces to transform natural language into database queries with role-based access, graph reasoning, and distributed architecture.
-
----
-
-## 🧠 Key Skills
-
-- **Programming & ML**: Python, Scikit-learn, TensorFlow, PyTorch, CNNs, Self-Supervised Learning, NLP, Federated Learning  
-- **Data Science & Bioinformatics**: Pandas, NumPy, Feature Engineering, PPI Networks, NetworkX  
-- **Web Development**: HTML5, CSS3, Sass, React, Redux, Next.js, Node.js, Stencil.js, TypeScript  
-- **DevOps & Cloud**: PostgreSQL, MongoDB, Redis, Docker, Kubernetes, AWS (EKS), CI/CD, Flask  
-- **Other Tools**: Web Scraping, LaTeX, Adobe Premiere, Overleaf, GitHub Actions  
-- **Languages**: English (B2), Italian (A1), Persian (Native)
+* Python, Deep Learning (CNNs, Self-Supervised), NLP, Scikit-learn, Federated Learning
+* Data Science: Pandas, NumPy, Feature Engineering, Network Analysis
+* Web Development: HTML5, CSS3, Sass, JavaScript, TypeScript, React, Redux, Next.js, Node.js, REST APIs
+* Databases & DevOps: PostgreSQL, MongoDB, Docker, Kubernetes, AWS, Flask
+* Other: Web Scraping, Overleaf, MS Office, Blockchain
+* Languages: English (B2), Italian (A1), Persian (Native)
 
 ---
 
-## 📂 Projects in This Repository
+## Repository Overview
 
-### 💻 Algorithmic Methods of Data Mining
-- HW1–HW5: Clustering, recommendation systems, similarity joins, and NLP-driven command-line tools.
+This repository collects my coursework, projects, and reports across data science, algorithms, cloud computing, computer vision, IoT, and bioinformatics. It is organized into folders by course or topic, with each containing relevant notebooks, code, and supporting materials.
 
-### 🧬 Bioinformatics & Network Medicine
-- PPI-based disease modeling for **Renal Cell Carcinoma**: ML-based gene ranking, GO/KEGG enrichment, drug-gene target mining.
 
-### 👁️ Eye Disease Detection (ML)
-- Self-supervised vision models (DINO, SimCLR) for ocular disease classification with fine-tuned CNNs.
+## Structure
 
-### ☁️ Cloud-Native Personality Web App
-- Full-stack web application using Flask + Next.js deployed on AWS EKS with MBTI-based career prediction.
+* **Algorithms**: Homeworks and scripts for the Algorithms for Data Mining (ADM) course. Includes Python scripts, command line tasks, and homework solutions.
+* **Bioinformatics**: Final project and results for Network Medicine and bioinformatics assignments.
+* **Cloud\_Computing**: Source code and configuration files for cloud computing projects, including Kubernetes deployments, backend APIs, and frontend code.
+* **Computer\_Vision**: Projects and presentations focused on computer vision and deep learning.
+* **Fundamental\_of\_Data\_Science**: Final project, report, and main notebook for foundational data science coursework.
+* **Novartis\_Datathon\_2024**: Code, data, and documentation related to the Novartis Datathon 2024 challenge.
+* **Smart-Environment-IOT**: Reports, presentations, and code related to smart environments and IoT, including implementations of diffusion models.
+* **Statistical\_Learning**: Final projects and homework for the Statistical Learning course, including code for diffusion models, conformal prediction, and age/gender estimation.
+* **Summer\_Camp**: Materials, solutions, and code from summer teaching camps.
 
-## 🏆 Hackathon & Camp Participation
 
-### 📊 **Novartis Datathon 2024**
-- Participated in an AI-driven healthcare datathon.
-- Developed predictive models and analytics pipelines for medical datasets.
-- Final code and solution are included in this repository.
+## Notes
 
-### 🏕️ **Sapienza Summer Camp**
-- Designed and implemented prototypes and ML demos during an intensive week-long camp.
-- Focused on rapid development, teamwork, and deployment of practical applications.
+* All code is in Python (with some shell scripts for command-line tasks).
+* Many projects require Google Colab Pro or a GPU runtime for reasonable performance.
+* Each subfolder usually contains its own `README.md` with additional project-specific details and instructions.
 
----
+## License
 
-## 📚 Education
-
-**MSc in Data Science**  
-Sapienza University of Rome, Italy  
-*(Thesis at CINECA – 2025)*
-
-**BSc in Computer Engineering (Software)**  
-Islamic Azad University of Shiraz, Iran  
-*(GPA ≈ 3.5/4.0 in last 60 credits)*
-
----
-
-## 📄 Publications
-
-- **Generating and Summarizing Worldwide COVID-19 Reports Using NLP**  
-  *Published in the 1st Int’l & 6th Nat’l Conference on Artificial Intelligence, 2023*  
-  Tools: Python, spaCy, Hugging Face Models
-
----
-
-## 📫 Contact
-
-- 📧 Email: feili.2101835@studenti.uniroma1.it  
-- 🌐 LinkedIn: [armanfeili](https://www.linkedin.com/in/armanfeili)  
-- 💬 Telegram: @armanfeili  
-- 📞 Phone: (+39) 379 175 6660
-
----
-
-> 🛠️ This repository represents my practical experience across machine learning, software engineering, cloud architecture, and scientific research. All code is developed for academic or portfolio use. Sensitive credentials have been removed.
+This repository is provided for educational and academic use. See individual folders for specific license files.
