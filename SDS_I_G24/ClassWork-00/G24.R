@@ -96,6 +96,12 @@ hist(vec_clean(coef), breaks = 50, col = "lightblue", main = "Raw Coeffs")
 qqnorm(vec_clean(coef)); qqline(vec_clean(coef), col = "red")
 
 ####
+# Results:
+# Histogram: It shows the distribution of the raw wavelet coefficients from the image. Most of the values are very close to zero showing wavelet detail coefficients. they capture edges and noise, but most areas in an image are smooth with small values.
+# Q-Q plot: checks if those coefficients follow a normal (Gaussian) distribution. The points curve away from the red line, especially at the tails, which means the distribution is not normal — it's more peaked in the center and has heavier tails than a Gaussian.
+####
+
+####
 # We asked gpt to see how to normalize a wavelet coefficient matrix block-by-block using local RMS, like it's done in GSM models.
 # Then we wanted to see if the normalization makes the distribution more Gaussian, so we tried to plot a histogram and Q-Q plot after normalization.
 ####
