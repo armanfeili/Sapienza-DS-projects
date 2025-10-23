@@ -179,3 +179,35 @@ rug(Ysamp, col = rgb(0,0,0,.3))
 
 
 
+# Student-t
+
+# Stochastic representation:
+
+# T = Z / sqrt(W/nu)
+
+# Where Z ~ N(0,1)
+#       W ~ Chi2(nu)
+#       z ind W
+
+# Pick nu
+nu <- 2
+
+?rnorm
+?rchisq
+
+set.seed(4321)
+M <- 5000
+Zsamp <- rnorm(M, 0, 1)
+Wsamp <- rchisq(M, df = nu)
+Tsamp <- Zsamp/sqrt(Wsamp/nu)
+
+# Plot 
+Tsamp_sel <- Tsamp[abs(Tsamp) < 20]
+hist(Tsamp_sel, prob=TRUE, border="white", col="navy",
+     main = "Samples from a Student-t?",
+     sub = paste("Degrees of Freedom = ", nu),
+     xlab="y", breaks = 50)
+curve(dt(x, df = nu), add = T, lwd = 4, col = "cyan3")  # Avoid sqrt(0)
+# rug(Tsamp, col = rgb(0,0,0,.3))
+rug(Tsamp)
+box()
