@@ -160,31 +160,22 @@ M <- 1000
 Xsamp <- runif(M, min = -1, max = +1)
 Ysamp = (Xsamp)^2
 
-dtrans <- function(x) 0.5*(y)^(-0.5)
+# density function for Y = X^2, X ~ U(-1,1)
+dtrans <- function(y) 1 / (2 * sqrt(y))
+
 par(mfrow = c(2,1))
 
-
-hist(Xsamp, prob=T,
-     border="white",
-     col="orange2",
-     main = "Samples from Unif(-1,+1)",
-     xlab="x",
-     breaks = 25)
-curve(dunif(x, -1,+1), add = T,
-      lwd = 4,
-      col = "red3")
+# Plot for X
+hist(Xsamp, prob=TRUE, border="white", col="orange2",
+     main = "Samples from Unif(-1,+1)", xlab="x", breaks = 25)
+curve(dunif(x, -1,+1), add = TRUE, lwd = 4, col = "red3")
 rug(Xsamp, col = rgb(0,0,0,.3))
 
+# Plot for Y
+hist(Ysamp, prob=TRUE, border="white", col="blue",
+     main = "Samples from Y = X^2", xlab="y", breaks = 25)
+curve(dtrans(x), from=0.001, to=1, add = TRUE, lwd = 4, col = "red3")  # Avoid sqrt(0)
+rug(Ysamp, col = rgb(0,0,0,.3))
 
-hist(Ysamp, prob=T,
-     border="white",
-     col="blue",
-     main = "Samples from the transformed R.V.",
-     xlab="x",
-     breaks = 25)
-curve(dunif(x, -1,+1), add = T,
-      lwd = 4,
-      col = "red3")
-rug(Xsamp, col = rgb(0,0,0,.3))
 
 
