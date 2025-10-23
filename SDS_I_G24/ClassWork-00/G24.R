@@ -126,6 +126,9 @@ par(mfrow = c(2,2))
 hist(vec_clean(coef_norm), breaks = 50, col = "lightgreen", main = "Normalized Coeffs")
 qqnorm(vec_clean(coef_norm)); qqline(vec_clean(coef_norm), col = "red")
 
+###
+# Result: After normalization (like in GSM models), the distribution is sharp at zero but now has a wider range (from -6 to 6). This means the normalization shows local contrast and make the data not look Gaussian.
+# The Q-Q plot still bends strongly at the ends (tails), so the distribution is still not Gaussian. In fact, the normalization made the tails even heavier — this is common when normalizing wavelet coefficients block by block.
 ####
 # What we asked from chatbot was that how to check if there’s correlation between wavelet coefficients and their neighbors, before and after normalization.
 ####
@@ -141,5 +144,6 @@ if (ncol(coef_norm) > 1) {
        xlab = "nu(i,j)", ylab = "nu(i,j+1)", main = "Neighbor (normalized)")
 }
 
-
+# Each point shows a pair of neighboring wavelet coefficients (one pixel and the one to its right). The points form a vertical ellipse, meaning there is a positive correlation between neighbors: if one coefficient is large, the next one is likely large too — but there's still a lot of noise.
+# After block-wise RMS normalization, the correlation between neighboring coefficients is still there, but the values are now more spread out, especially vertically. This suggests the normalization increased variability while keeping some dependency between neighbors.
 
