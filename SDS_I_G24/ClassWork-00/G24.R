@@ -147,3 +147,44 @@ if (ncol(coef_norm) > 1) {
 # Each point shows a pair of neighboring wavelet coefficients (one pixel and the one to its right). The points form a vertical ellipse, meaning there is a positive correlation between neighbors: if one coefficient is large, the next one is likely large too — but there's still a lot of noise.
 # After block-wise RMS normalization, the correlation between neighboring coefficients is still there, but the values are now more spread out, especially vertically. This suggests the normalization increased variability while keeping some dependency between neighbors.
 
+
+
+
+
+
+?dunif
+
+set.seed(3435)
+M <- 1000
+
+Xsamp <- runif(M, min = -1, max = +1)
+Ysamp = (Xsamp)^2
+
+dtrans <- function(x) 0.5*(y)^(-0.5)
+par(mfrow = c(2,1))
+
+
+hist(Xsamp, prob=T,
+     border="white",
+     col="orange2",
+     main = "Samples from Unif(-1,+1)",
+     xlab="x",
+     breaks = 25)
+curve(dunif(x, -1,+1), add = T,
+      lwd = 4,
+      col = "red3")
+rug(Xsamp, col = rgb(0,0,0,.3))
+
+
+hist(Ysamp, prob=T,
+     border="white",
+     col="blue",
+     main = "Samples from the transformed R.V.",
+     xlab="x",
+     breaks = 25)
+curve(dunif(x, -1,+1), add = T,
+      lwd = 4,
+      col = "red3")
+rug(Xsamp, col = rgb(0,0,0,.3))
+
+
