@@ -1,0 +1,4338 @@
+**Robust machine learning by median-of-means : theory and practice**
+
+G. Lecué and M. Lerasle
+
+December 4, 2017
+
+---
+
+### Abstract
+
+We introduce new estimators for robust machine learning based on median-of-means (MOM) estimators of the mean of real valued random variables. These estimators achieve optimal rates of convergence under minimal assumptions on the dataset. The dataset may also have been corrupted by outliers on which no assumption is granted. We also analyze these new estimators with standard tools from robust statistics. In particular, we revisit the concept of breakdown point. We modify the original definition by studying the number of outliers that a dataset can contain without deteriorating the estimation properties of a given estimator. This new notion of *breakdown number*, that takes into account the statistical performances of the estimators, is non-asymptotic in nature and adapted for machine learning purposes. We proved that the breakdown number of our estimator is of the order of *number of observations* × *rate of convergence*. For instance, the breakdown number of our estimators for the problem of estimation of a *d*-dimensional vector with a noise variance σ² is σ²d and it becomes σ² log(ed/s) when this vector has only *s* non-zero component. Beyond this breakdown point, we proved that the rate of convergence achieved by our estimator is *number of outliers* divided by *number of observations*.
+
+Besides these theoretical guarantees, the major improvement brought by these new estimators is that they are easily computable in practice. In fact, basically any algorithm used to approximate the standard Empirical Risk Minimizer (or its regularized versions) has a robust version approximating our estimators. On top of being robust to outliers, the “MOM version” of the algorithms are even faster than the original ones, less demanding in memory resources in some situations and well adapted for distributed datasets which makes it particularly attractive for large dataset analysis. As a proof of concept, we study many algorithms for the classical LASSO estimator. It turns out that the original algorithm can be improved a lot in practice by randomizing the blocks on which “local means” are computed at each step of the descent algorithm. A byproduct of this modification is that our algorithms come with a measure of *depth* of data that can be used to detect outliers, which is another major issue in Machine learning.
+
+---
+
+### 1 Introduction
+
+Recent technological developments have allowed companies and state organizations to collect and store huge datasets. These yield amazing achievements in artificial intelligence such as self driving cars or softwares defeating humans in highly complex games such as chess or Go. In fact, most big organizations have realized that data will have a major role in the future economy. Most companies in banks, electric or oil companies, etc. have a digital branch developing new data-based services for customers and new companies even build all their business on data collected on Twitter, Facebook or Google.
+
+Big datasets have also challenged scientists in statistics and computer science to develop new methods. In particular, Machine Learning has attracted a lot of attention over the past few years. As explained in [80], machine learning can be seen as a branch of statistical learning dealing with large datasets where any procedure besides presenting optimal statistical guarantees should be provided with at least a tractable algorithm for its practical implementation. This new constraint raised several interesting problems while revisiting the classical learning theory of Vapnik [95]. In particular, to name just a few, algorithms minimizing convex relaxations of the classical empirical 0–1-risk counting the number of misclassification have been proposed and studied over the last few years. More generally, optimization algorithms are now routinely used and analyzed by statisticians.
+
+---
+
+## **1.1 Corruption of big datasets**
+
+Our theoretical understanding of many classical procedures of machine learning such as LASSO [85] heavily relies on two assumptions on the data, that should both be i.i.d. and have subgaussian behaviors. As noted in [7], “data from real-world experiments oftentimes tend to be corrupted with outliers and/or exhibit heavy tails”. For example, in finance, heavy-tailed processes are routinely used and, in biology or medical experiments datasets are regularly subject to some corruption by outliers. These outliers are even in some applications the data of actual interests, one can think of fraud detections for example. The need for robust procedures in data science can be appreciated, for instance, by the recently posted challenges on “kaggle”, the most popular data science competition platform. The 1.5 million dollars problem “Passenger Screening Algorithm Challenge” is about to find terrorist activity from 3D images. The “NIPS 2017: Defense Against Adversarial Attack” is about constructing algorithms robust to adversarial data.
+
+---
+
+## **1.1.1 Current ML solutions are highly sensitive to dataset’s corruption**
+
+It is easy to check that most routinely used and theoretically understood algorithms break down when even a single “outlier” corrupts the dataset. This is the case of the standard least-squares estimator or its ℓ₁ penalized version known as LASSO for example as one can see from the simulation in Figure 1.
+
+---
+
+### **Figure 1**
+
+*(left)*: Estimation error of the LASSO after one outlier was added at observation number 100.
+*(right)*: Estimation error versus proportion of outliers for LASSO and its “Median of Means (MOM)” version.
+
+---
+
+### **Explanation of the charts**
+
+#### **Left chart: Estimation error vs. number of observations (LASSO)**
+
+* **X-axis**: Number of observations
+* **Y-axis**: Estimation error
+* **What happens**:
+
+  * Initially, the estimation error is low and stable.
+  * At observation **100**, a **single outlier** is introduced.
+  * Immediately after that point, the error **jumps dramatically** and remains high.
+* **Interpretation**:
+
+  * Even **one outlier** can completely destroy the performance of LASSO.
+  * This illustrates the **extreme sensitivity** of classical estimators to corrupted data.
+
+---
+
+#### **Right chart: Estimation error vs. proportion of outliers**
+
+* **X-axis**: Proportion of outliers in the dataset
+
+* **Y-axis**: ℓ₂ estimation error
+
+* **Curves**:
+
+  * **LASSO (dashed green line)**
+  * **MOM-LASSO (solid blue line)**
+
+* **What happens**:
+
+  * LASSO’s error rapidly explodes even for a **very small fraction of outliers**.
+  * MOM-LASSO remains **stable and much lower** over a wide range of outlier proportions.
+
+* **Interpretation**:
+
+  * The Median-of-Means (MOM) approach provides **robustness**.
+  * MOM-LASSO degrades gracefully instead of collapsing.
+
+---
+
+LASSO is not an isolated example, most algorithms are actually designed to approximate minimizers of penalized empirical loss and empirical means of unbounded functions are highly sensitive to corrupted data. In statistics, building robust estimators has been an issue for a long time at least since the work of John Tukey, Frank Hampel and Peter Huber. It has yielded interesting “robust” alternatives to the standard maximum likelihood estimator, one can refer to [41] for an overview on robust statistics and to Baraud, Birgé and Sart [10] or Baraud and Birgé [8] see also [20, 5] for deep new developments in robust statistics.
+
+---
+
+## **1.1.2 Resist or detect outliers: a raising challenge in ML**
+
+There are mainly two types of outliers in practice: those corrupting a dataset which are not interesting (outliers can appear in datasets due to storage issues, they can also be adversarial data as fake news, false declarative data, etc.) and those that are rare but important observations like frauds, terrorist activities, tumors in medical images, … A famous example of the latter type of “outlier” discovered unexpectedly was the ozone hole [62, p.2]. In the former case, the challenge is to construct predictions as sharp as if the dataset was clean and in the latter, the main question is to detect outliers.
+
+Of course, any dataset is preprocessed to be “cleaned” from outliers. This step, called “data jujitsu”, “data massage”, “data wrangling” or “data munging” usually takes 80% of data scientists time. It requires an important quantity of expertise to guide data scientists [12]. Some platforms like “Amazon mechanical turk” allow to preprocess collectively datasets with millions of lines. Even when done with maximal care,
+
+---
+
+some contamination always affect modern datasets, because outliers are particularly hard to detect in high dimension and because the distinction between outliers and informative data is often delicate in practice.
+
+For these reasons, robustness has recently received a lot of attention in machine learning. Theoretical results have been obtained when “outliers” appear because the underlying distribution exhibits heavier tails than subgaussian distributions, producing anomalies. In this case, many attempts have been made to design estimators presenting subgaussian behaviors under minimal assumptions for this to make sense. This program was initiated by Catoni [20] for the estimation of the mean on the real line and Audibert and Catoni [5] in the least-squares regression framework. To the best of our knowledge, besides for the estimation of the mean of a real valued random variable where median-of-means estimators [2, 43, 73] provide a computationally tractable estimator satisfying optimal subgaussian concentration bounds [25], the other estimators are either suboptimal see for example [71] for the estimation of the mean of a vector in ℝᵈ or [18] for more general learning frameworks, or completely untractable see for example [61, 59, 50] for some examples in regression frameworks.
+
+---
+
+## **1.2 Robustness: state of the art**
+
+The book [62] traces back the origins of robust statistics to the fundamental works of John Tukey [86, 87], Peter Huber [39, 40] and Frank Hampel [33, 35]. Tukey asked the following question for the location problem of a Gaussian distribution “what happens if the distribution slightly deviates from the normal distribution?”. Tukey’s 1960 example shows the dramatic lack of distributional robustness of some classical procedures like Maximum Likelihood Estimator (MLE) [42, Example 1.1]. A related question was asked by Hodges [38] about “tolerance to extreme values”.
+
+In fact, one doesn’t define one robustness property in general. Estimation, prediction or more generally any statistical properties like consistency, asymptotic normality, minimax optimality, etc. require assumptions (cf. the “no free lunch theorem” [24]). Such assumptions are naturally questionable on real databases. What properties of an estimator pertain when one or several assumptions are not satisfied? As there are several types of assumptions, one can define several types of robustness. For example, Tukey’s question is about robustness to a misspecification of the Gaussian model while Hodges’ question can be understood as robustness to contamination of the dataset by large outliers or robustness to heavy-tailed distributions in the model that may have caused the appearance of large data.
+
+---
+
+## **1.2.1 Natural robustness properties of learning procedures**
+
+Robustness issues are particularly sensitive when data and risk are unbounded. To understand that, suppose first that the loss ℓ is the classical (bounded) 0–1 loss in classification:
+ℓ_f(x, y) = 1_{y ≠ f(x)}.
+
+Assume that the dataset 𝒟 is made of N − |𝒪| i.i.d. data (X_i, Y_i)_{i∈𝓘} and |𝒪| “outliers” (X_i, Y_i)_{i∈𝒪} that can be anything. The empirical risk
+
+[
+P_N \ell_f = \frac{1}{N} \sum_{i=1}^N \ell_f(X_i, Y_i)
+]
+
+satisfies for all f : 𝒳 → {−1, 1} (where 𝒳 is the space where the X_i take their values and the Y_i ∈ {−1, 1})
+
+[
+\left| (P_N - P_{\mathcal{I}})\ell_f \right| \le \frac{2|\mathcal{O}|}{N},
+]
+
+where
+
+[
+P_{\mathcal{I}}\ell_f = \frac{1}{|\mathcal{I}|} \sum_{i\in\mathcal{I}} \ell_f(X_i, Y_i).
+]
+(1)
+
+If the fraction |𝒪|/N is small enough, the ERM over a class ℱ of functions from 𝒳 to {−1, 1}
+
+[
+\hat f_N = \arg\min_{f\in\mathcal{F}} P_N \ell_f
+]
+
+performs theoretically as well as the ERM based only on the “good” data (X_i, Y_i)_{i∈𝓘}
+
+[
+\hat f_{\mathcal{I}} = \arg\min_{f\in\mathcal{F}} P_{\mathcal{I}} \ell_f .
+]
+
+---
+
+## **Charts / figures in this page**
+
+✅ **No charts, plots, or figures appear on this page.**
+
+This section is **purely theoretical** and consists of:
+
+* conceptual discussion of robustness,
+* historical context,
+* formal definitions,
+* inequalities and ERM formulations.
+
+---
+
+which is statistically optimal in some problems [24]. In that case, the number of outliers |𝒪| has to be less than N times the *rate of convergence* of (\hat f_{\mathcal{I}}) — this is a condition we will meet later for our estimators.
+
+The problem with (\hat f_N) is that minimizing the empirical loss is NP-hard. To overcome this issue practitioners have introduced several convex relaxation of the 0–1 loss. As a result, what is actually computed is a minimizer of empirical risk associated with an unbounded loss function ℓ (like the square, logistic, hinge or exponential losses) over an unbounded set of functions (as the set of linear functions ({\langle \cdot , t\rangle, t \in \mathbb{R}^d})). This actual minimization problem is much more sensitive to outliers (no bounds can be provided between the empirical processes such as in (1)) and *practical* ERM (actually its proxies) are completely wrong even if the *theoretical* ERM performs well. In the following, we assume that Y, ℱ are unbounded and ℓ is the (unbounded) square loss:
+[
+\ell_f(x,y) = (y - f(x))^2
+]
+that is known to be sensitive to outliers.
+
+Classical estimators, such as the maximum likelihood estimator (MLE) are designed for some very specific choice of statistical model and are therefore extremely model dependent: in the set of all Gaussian distributions with mean μ ∈ ℝ and variance σ > 0, the MLE of μ is the empirical mean while it is the empirical median in the set of all Laplace distributions with position parameters μ ∈ ℝ. Tukey’s example showed that MLE may perform very poorly under model misspecification. ML and learning theory tackle this issue by not assuming a statistical model on data. Instead of imposing strong assumptions allowing to fit all data distribution, learning procedures typically focus on a simpler task that can be achieved under much weaker restrictions on the randomness of data.
+
+The typical example is as follows. A dataset
+[
+\mathcal{D} = {(X_i, Y_i)*{i=1}^N}
+]
+of N independent and identically distributed (i.i.d.) variables with values in (\mathbb{R}^d \times \mathbb{R}) is given. In statistics, the classical (parametric) approach is to start with a statistical model, i.e. a family ((P*\theta)*{\theta \in \Theta}) indexed by some subset (\Theta \subset \mathbb{R}^d) of distributions that should contain that of ((X_1, Y_1)), or at least that of (Y_1 | X_1). In the Gaussian linear regression model [83], one assumes that
+[
+Y_i = \langle X_i, t^* \rangle + \sigma \xi_i,
+]
+where (t^* \in \mathbb{R}^{d-1}) and (\sigma > 0) are unknown parameters and ((\xi_i)*{i=1}^N) are i.i.d. standard Gaussian random variables independent of ((X_i)*{i=1}^N). The problem is to estimate the unknown parameters
+[
+\theta = (t^*, \sigma) \in \mathbb{R}^d
+]
+given the dataset (\mathcal{D}) assuming that the distribution of (Y_1|X_1) belongs to the set of Gaussian distributions ((P*\theta)_{\theta \in \Theta}).
+
+In Learning Theory, no assumption on the conditional expectation (\mathbb{E}[Y_1|X_1]) nor any particular form for the conditional distribution of (Y_1|X_1) is assumed. For instance, (Y_i) can be any function of (X_i), it may also be independent of (X_i). Given a new input X, one still wants to guess the associated output Y. To proceed, a class of functions ℱ is proposed containing functions (f \in \mathcal{F}) used to guess the value (f(X)) of Y. It is not assumed that the regression function (x \mapsto \mathbb{E}[Y|X=x] \in \mathcal{F}), we just hope that the ideal choice (f^* \in \mathcal{F}) allows to build a good guess (f^*(X)) of Y. The learning task is to provide from the dataset a good approximation of (f^*). If (f^*(X)) is actually a good guess of Y, then so will be any good approximation of (f^*) applied in X, if not then we simply end up with a bad guess of Y. The function (f^*) providing the best guess (f^*(X)) of Y is called an oracle and the difference (Y - f^*(X)) is called the noise. Assume that
+[
+\mathcal{F} = {\langle \cdot , t\rangle : t \in \mathbb{R}^d}
+]
+is the class of linear functionals. If the regression function (x \mapsto \mathbb{E}[Y|X=x]) is assumed to be in ℱ then the tasks in Machine Learning and Statistics are essentially the same because the oracle equals the regression function. The difference is that learning procedures consider the estimation of (f^*) that may not be the regression function without assuming a parametric family of distributions for the noise. As such, the misspecification problem is naturally tackled in Machine Learning.
+
+---
+
+## **1.2.2 Robustness to heavy-tailed data**
+
+The Gaussian assumption on the noise (Y_1 - f^*(X_1)) in statistics is usually weakened in learning theory to a subgaussian assumption (the (L_p)-moments of the noise are bounded by those of a Gaussian variable). This subgaussian assumption is already much more flexible and essentially allows to extend the use of least-squares estimators and their penalized versions to a much broader class of possible distributions for the noise. Going beyond the subgaussian assumption is in general way more technical. One way to proceed is to assume a subexponential assumption — random variables whose (L_p) moments are smaller than those of an exponential variable — as in the Bernstein’s condition in [92]. More recently, the subexponential assumption has also been relaxed into (L_p)-moment assumptions. Least-squares estimators have been studied as well …
+
+
+---
+
+to be specified in advance to ultimately balance between resistance to outliers and bias of the estimation. Earlier regression estimate go back to Laplace and its Least Absolute Deviation (LAD) or (L_1)-estimate that minimizes (\sum_i |Y_i - \langle X_i, t\rangle|) yielding the median in the location problem [26]. These M-estimation strategies work well both in theory and practice [42, 62], but fail totally when even one (X_i) has a gross error. In the regression problem (Y_i = \langle X_i, t^*\rangle + \xi_i) where (X^\top X = I_{d\times d}) and (\xi_1,\ldots,\xi_N) are i.i.d. random errors such that (\mathbb{E}\psi(\xi_i) = 0), asymptotic results for M-estimators can be found in [42] when (d) is fixed and (N) goes to infinity. When (d) is allowed to grow with (N), some results have also been obtained but, as noted in [42, p.168], under conditions that are, for all “practical purposes worthless” since “already for a moderately large number of parameters, we would need an impossibly large number of observations”. When the inputs are clean of outliers, subgaussian random variables, or when there is no design, non asymptotic results on minimizers of the Huber loss have also been obtained recently in the small and large dimension settings [30, 75].
+
+Many alternative robust procedures can be found in the regression literature, among other, one can mention the least median of squared residuals estimator [76] and the least trimmed sum of squares estimator [77] which minimizes the sum of the (N/2 + 1) smallest squared residuals. Finally, [36] introduced Least Median of Squares in regression which naturally extends the median estimator in the location problem:
+[
+\hat t \in \arg\min_{\theta\in\mathbb{R}^d} \operatorname{Median}\big( Y_1 - \langle X_1,\theta\rangle,\ldots,Y_N - \langle X_N,\theta\rangle \big).
+]
+
+Its computational complexity rises exponentially with (d) [37, p.330], [63].
+
+---
+
+## **1.3.3 Other challenges**
+
+We discussed the problems of detecting outliers and resisting corruption of the inputs earlier. Besides these, robust statistic has left some interesting open questions that have to be addressed.
+
+Most results in robust statistics are asymptotic but the asymptotic approach may be quite misleading:
+“[…] approaches based on asymptotics are treacherous, and it could be quite misleading to transfer insights gained from asymptotic variance theory or from infinitesimal approaches (gross error sensitivity and the like) by heuristics to leverage points with (h_i > 0.2)” [42, p.189]. In other words, robustness issues ultimately have to be tackled from a non-asymptotic point of view. Again, (\rho)-estimators [10, 9] treat this issue from a statistical perspective but cannot be applied in our learning setting.
+
+The actual solution to get rid of some data a priori and work on what is supposed to be clean data seems quite dangerous. First, if “outliers” are due to heavy-tailed data, this can induce some bias in the estimation. Second, data can be typical for the estimation of some means (P\ell_f) but not for other choices of loss function (\ell') and/or function (f'). An estimator (P\ell_f) may even get better if one uses some data while another (P\ell_{f'}) would get worse. The definition of outliers is thus not clear, it may depend on the estimators, the risk function and the parameter of interest. Therefore, if some subsampling is performed to get more robustness, it should be done with respect to the loss (\ell) and point (f) and not on systematic preprocessing algorithms blind to the specific learning problem we want to solve.
+
+When designing robust strategies for ML, one should keep in mind that these should be computationally tractable. To the best of our knowledge, no estimator robust to outlier in the outputs nor any general learning procedure robust to heavy-tailed data can currently be used in high dimensional learning problems.
+**There is currently no available algorithm for high dimensional learning whose good statistical performance don’t break down in the presence of one outlier in the dataset.**
+
+---
+
+## **1.4 Contributions**
+
+In this paper, we propose a new estimator of the learning function
+[
+f^* = \arg\min_{f\in\mathcal{F}} P[(Y - f(X))^2].
+]
+
+This new estimator has minimax-optimal non-asymptotic risk bounds even when the dataset has been corrupted by outliers (that may have corrupted indifferently the inputs, the outputs or both of them) and …
+
+---
+
+when informative data (those that are not outliers) only satisfy somehow minimal assumptions relating their (L_2) geometry on (\mathcal{F}) to that of (P) (see Sections **1.4.1** and **3.1** for details). This estimator solves therefore all challenges related to outliers in the learning theory literature including “adversarial outliers” — which are data satisfying no assumptions — and “stochastic outliers” — which are informative data that may look like outliers because of some weak concentration properties due to heavy tail distributions.
+
+We also show that our estimator can be used for ML purposes by providing several algorithms to compute proxies of our estimators and illustrate their performance in an extensive simulation study (see Section **A**). This opens several interesting conjectures for example, to study and compare theoretically convergence of these algorithms, and to automatically calibrate our estimators.
+
+---
+
+## **1.4.1 Going beyond the i.i.d. setup: the (\mathcal{O} \cup \mathcal{I}) framework**
+
+We propose the following setup that allows the presence of outliers and relax the standard i.i.d. setup. We assume that data are partitioned in two groups (unknown from the statistician), more precisely
+[
+{1,\ldots,N} = \mathcal{O} \cup \mathcal{I}, \quad \text{with } \mathcal{O} \cap \mathcal{I} = \varnothing
+]
+
+* data ((X_i, Y_i)*{i\in\mathcal{O}}) ((\mathcal{O}) stands for “outliers”) are not assumed to be independent nor independent to the other ones ((X_i, Y_i)*{i\in\mathcal{I}}), they may not be identically distributed, in fact *nothing is required on these data*; they can even be adversarial in the sense that may have been designed to make the learning task harder,
+
+* data ((X_i, Y_i)_{i\in\mathcal{I}}) (called *informative*) are the only data on which we can rely on to solve our learning task. In what follows, we only need very weak assumptions on those data to make MOM estimators achieving optimal statistical properties. In particular, we will always assume that the informative data are independent.
+
+As we allow the presence of outliers, our procedure will be in a sense robust to the i.d. (identically distributed) assumption. This robustness goes actually further, since even informative data won’t be assumed identically distributed. Instead, our procedure will be shown to work under the much weaker requirement that the distributions of ((X_i, Y_i)) for all (i \in \mathcal{I}) induce an equivalent (L_2) metric over the class (\mathcal{F}) and equivalent covariance between functions in (\mathcal{F}) and the output. If various distributions have equivalent first and second moments for all functions (f \in \mathcal{F}), our estimators will exhibit the same optimal performance as if they were i.i.d. Gaussian with similar first and second moments on all (f \in \mathcal{F}). Our new assumption feels more natural than the usual i.i.d. one as distributions inducing the same “risk geometry” on (\mathcal{F}) seem interesting to solve our learning task and any other higher moment assumption above 2 seems unnatural. However, the standard ERM once again would fail to achieve this goal as the behavior of the supremum over subclasses of (\mathcal{F}) of the empirical process used to bound the risk of the ERM depends in general on higher moments of these distributions.
+
+---
+
+## **1.4.2 Quantifying robustness by breakdown point**
+
+The breakdown point of an estimator [32, 29, 42] is the smallest proportion of corrupted observations necessary to push an estimator to infinity [28, p.1809], [42, p.279]. The notion has been introduced by Hampel [32] in his 1968 Ph.D. thesis. In [29, 27], the notion was revisited with the following non-asymptotic definition, see also [81, 34]. Let (\mathcal{D}*{\mathcal{I}}) denote a dataset and let (T) be an estimator. If there exists a strategic / malicious / adversarial choice of another dataset (\mathcal{D}*{\mathcal{O}}) such that
+[
+T(\mathcal{D}*{\mathcal{I}} \cup \mathcal{D}*{\mathcal{O}}) - T(\mathcal{D}*{\mathcal{I}})
+]
+is arbitrarily large, the estimator is said to break down under the contamination fraction
+[
+|\mathcal{D}*{\mathcal{O}}| / (|\mathcal{D}*{\mathcal{I}}| + |\mathcal{D}*{\mathcal{O}}|).
+]
+
+The Donoho–Hampel–Huber breakdown point (\varepsilon^*(T, \mathcal{D}_{\mathcal{I}})) is then defined as the smallest contamination fraction under which estimator (T) breaks down:
+[
+\varepsilon^*(T, \mathcal{D}*{\mathcal{I}}) =
+\min*{m \in \mathbb{N}}
+\left{
+\frac{m}{|\mathcal{D}*{\mathcal{I}}| + m}
+:;
+\sup*{\mathcal{D}*{\mathcal{O}} : |\mathcal{D}*{\mathcal{O}}| = m}
+\big| T(\mathcal{D}*{\mathcal{I}} \cup \mathcal{D}*{\mathcal{O}}) - T(\mathcal{D}_{\mathcal{I}}) \big| = \infty
+\right}.
+\tag{4}
+]
+
+
+---
+
+For the estimation of the mean (\mu) of a random variable from (N) i.i.d. observations, the empirical mean can be made arbitrarily large by adding a single “bad” observation. The breakdown point of the empirical mean estimator is therefore (1/(N+1)) and this is the worst possible value for an estimator. The empirical mean is not robust to outliers, it performs very poorly in corrupted environments. On the other hand, the empirical median has a breakdown value of (1/2) for the location problem.
+
+Constant estimators have breakdown points equal to 1. To avoid these degenerate examples, one restricts the set of estimators to consider optimality from the breakdown point of view. For instance, in the regression problem, one can consider *equivariant* estimators [22, 21] and [62, p.92], that is estimators (T) invariant by affine transformation of the data: for all (a \in \mathbb{R}^d) and (\lambda \in \mathbb{R}),
+
+[
+T\big((X_i,\lambda(Y_i+\langle X_i,a\rangle))_{i=1}^N\big)
+==========================================================
+
+\lambda\big(T((X_i,Y_i)_{i=1}^N)+a\big).
+\tag{5}
+]
+
+Among equivariant estimators, the common sense heuristic applies: “when more than half data are bad, one cannot learn from good ones” [21]. In particular, among equivariant estimators, (1/2) is the best possible breakdown point for an estimator and the empirical median is optimal from this perspective. When the parameter of interest belongs to a bounded set, one can adapt the definition of breakdown point as in the discussion papers of [21]. Other generalization to quantile estimation can be found in [78].
+
+Similar results are much harder to obtain in higher dimensions, the main reason being the absence of a natural notion of median or quantiles in dimension (d \ge 2). This problem gave birth to the construction of *depths*, the most famous one being Tukey’s depth [89, 88]. The notions of median, trimmed mean and covariance resulting from Tukey’s depth yield robust estimators in high dimensions. For instance, in [27, 28], the depth-trimmed mean and the deepest point are affine invariant estimators with breakdown points (1/3). It is even possible to achieve a breakdown point for the location problem in (\mathbb{R}^d) close to (1/2) by using a weight function based on Tukey’s depth [82, 27].
+
+---
+
+## **1.4.3 A modified notion of breakdown point for ML**
+
+We introduce a new concept of breakdown point for Learning. The standard breakdown point (4) does not come with any estimation or prediction property. As already mentioned, this leads to consider restricted classes of estimators to study optimality from the breakdown point of view to avoid degenerate cases. Instead of imposing algebraic restrictions, our new definition focus on the risk of the procedures.
+
+**Definition 1.**
+Let (\delta \in (0,1)), (\mathcal{R} > 0), (N \ge 1), (\mathcal{F}) be a class of functions from (\mathcal{X}) to (\mathbb{R}) and (\mathcal{P}) be a set of distributions on (\mathcal{X} \times \mathbb{R}). Let
+(T : \bigcup_{n\ge1}(\mathcal{X}\times\mathbb{R})^n \to \mathcal{F}) denote an estimator and let
+(\mathcal{D}={(X_i,Y_i)*{i=1}^N}) be a dataset made of (N) i.i.d. random variables with a common distribution in (\mathcal{P}).
+For any (P\in\mathcal{P}), let
+[
+f_P^* = \arg\min*{f\in\mathcal{F}} \mathbb{E}_{(X,Y)\sim P}[(Y-f(X))^2].
+]
+The *breakdown number* of the estimator (T) on the class (\mathcal{P}) at rate (\mathcal{R}) with confidence (\delta) is
+
+[
+K_{\mathrm{ML}}^*(T,N,\mathcal{R},\delta,P)
+===========================================
+
+\min
+\left{
+k\in\mathbb{Z}*+ :
+\inf*{P\in\mathcal{P}}
+\mathbb{P}*{\mathcal{D}\sim P^{\otimes N}}
+\left(
+\sup*{|\mathcal{O}|=k}
+|T(\mathcal{D}\cup\mathcal{O})-f_P^*|_{L_2(P_X)}
+\le \mathcal{R}
+\right)
+\ge 1-\delta
+\right},
+]
+
+where (P_X) denotes the marginal on (\mathcal{X}) of (P).
+
+In words, the breakdown number is the minimal number of points one has to add to a dataset to break statistical performance of an estimator (T). In this definition, the rate (\mathcal{R}) one can achieve is of particular importance. Ultimately, we would like to take it as small as possible. To that end, recall the definition of a minimax rate of convergence.
+
+---
+
+**Definition 2.**
+Let (\delta>0), (N\ge1), (\sigma>0), (\mathcal{F}) be a class of functions from (\mathcal{X}) to (\mathbb{R}) and, for any (f\in\mathcal{F}), let (P_f) denote the distribution of ((X,Y)) when (X) is a standard Gaussian process on (\mathcal{X}), (\xi) is a standard Gaussian random variable on (\mathbb{R}) independent of (X) and (Y=f(X)+\sigma\xi). For any (f\in\mathcal{F}), denote by (P_f^N = P_f^{\otimes N}).
+
+---
+
+the distribution of a sample ((X_i,Y_i)*{i=1,\ldots,N}) of (N) i.i.d. random variables distributed according to (P_f). Any estimator (\hat f_N = T((X_i,Y_i)*{i=1,\ldots,N})) is said to perform with accuracy (\mathcal{R}) and confidence (\delta) uniformly on (\mathcal{F}) if
+
+[
+\forall f \in \mathcal{F}, \qquad
+\mathbb{P}*f!\left(
+|\hat f_N - f|*{L^2(P_X)}^2 \le \mathcal{R}
+\right) \ge 1 - \delta .
+]
+
+The minimax accuracy (\mathcal{R}(\delta,\mathcal{F})) is the smallest accuracy that can be achieved uniformly over (\mathcal{F}) with confidence (\delta) by some estimator.
+
+The minimax rate of convergence defined in Definition 2 is obtained in the “Gaussian model” (that is when the dataset is made of (N) i.i.d. observations in the regression model with Gaussian design and Gaussian noise independent of the design) which is somehow the benchmark model in statistics in which one can derive minimax rates of convergence over (\mathcal{F}). We will therefore use the minimax rates obtained in this model as benchmark rates of convergence.
+
+For any class (\mathcal{P}) containing the Gaussian model indexed by (\mathcal{F}), that is ((P_f)*{f\in\mathcal{F}}) (we shall always work under this assumption in the following) and any (\mathcal{R} < \mathcal{R}(\delta,\mathcal{F})), it is clear that
+[
+K^**{\mathrm{ML}}(T,N,\mathcal{R},\delta,\mathcal{P}) = 0
+]
+as no estimator can even achieve the rate (\mathcal{R}) even on datasets containing no outliers. The notion is therefore interesting only for rates (\mathcal{R} \ge \mathcal{R}(\delta,\mathcal{F})) and we shall be particularly interested by rates (\mathcal{R} = C \mathcal{R}(\delta,\mathcal{F})) for some absolute constant (C \ge 1) since estimators with
+[
+K^* = K^*_{\mathrm{ML}}(T,N,\mathcal{R},\delta,\mathcal{P}) > 0
+]
+are minimax (therefore statistically optimal) even when the dataset has been corrupted by up to (K^*) outliers. Furthermore, we will be interested in classes (\mathcal{P}) much larger than ((P_f)_{f\in\mathcal{F}}); typically, one would like (\mathcal{P}) to be the class of all distributions (P) of ((X,Y)) such that (Y) and all (f(X)) with (f \in \mathcal{F}) have finite second order moments since these are the minimal properties giving sense to the square risk (\mathbb{E}[(Y-f(X))^2]).
+
+Finally, the following link between the classical breakdown point and the new breakdown number always holds: for any (\delta>0), (\mathcal{R}>0), any class (\mathcal{P}), any dataset (\mathcal{D}) and any estimator (T), one has
+
+[
+\varepsilon^*(T,\mathcal{D})
+;\ge;
+\frac{1 + K^**{\mathrm{ML}}(T,|\mathcal{D}|,\mathcal{R},\delta,\mathcal{P})}
+{1 + K^**{\mathrm{ML}}(T,|\mathcal{D}|,\mathcal{R},\delta,\mathcal{P}) + N } .
+]
+
+Using this new definition, one can be interested in various existence or optimality properties such as:
+
+1. Given (0 < \delta < 1), (C > 0), what is the largest set of sample distributions (\mathcal{P}_{\delta,C}) where one can build estimators with accuracy (C\mathcal{R}(\delta,\mathcal{F})) of the same order as in the Gaussian model?
+
+2. Given (0 < \delta < 1), (\mathcal{R} > \mathcal{R}(\delta,\mathcal{F})) and (\mathcal{P} \subset \mathcal{P}*{\delta,C}), is there some procedure (T) such that
+   [
+   K^**{\mathrm{ML}}(T,N,\mathcal{R},\delta,\mathcal{P}) > 0 , ?
+   ]
+
+3. Given (0 < \delta < 1), (\mathcal{R} > \mathcal{R}(\delta,\mathcal{F})) and (\mathcal{P} \subset \mathcal{P}*{\delta,C}), how large can be
+   [
+   \sup_T K^**{\mathrm{ML}}(T,N,\mathcal{R},\delta,\mathcal{P}) ?
+   ]
+   and is this maximum achievable by a computationally tractable estimator (T)?
+
+Most recent theoretical works on robust learning approaches focus on the first question, showing that statistical optimality can actually be achieved over much broader classes of distributions than the Gaussian model, see [60, 59] for example. In this paper, we build on the approach introduced in [50] where we proved that, for any (\delta) smaller than (\exp(-C N r_N^2)), there exists estimators such that
+[
+K^*_{\mathrm{ML}}(T,N,r_N^2,\delta,\mathcal{P}) \ge C N r_N^2
+]
+where (r_N^2) is the minimax rate of convergence in the Gaussian model for exponential deviation. It is for instance given by
+[
+r_N^2 = \sigma^2 d / N
+]
+for the problem of estimation of a (d)-dimensional vector and
+[
+r_N^2 = \sigma^2 s \log(ed/s) / N
+]
+when this vector has only (s) non-zero coordinates.
+
+But we go further in this paper, showing that these performance can be achieved by a procedure that is computationally tractable, hence by a Machine Learning algorithm. This ultimate breakthrough is due to a new estimator that we shall now introduce.
+
+---
+
+## **1.4.4 Our estimators**
+
+The key equation to understand our procedure is that the target
+[
+f^* = \arg\min_{f\in\mathcal{F}} \mathbb{E}[(Y - f(X))^2]
+]
+can be obtained as the solution of the following minimaximization problem
+[
+f^* = \arg\min_{f\in\mathcal{F}} \sup_{g\in\mathcal{F}}
+\mathbb{E}!\left[(Y - f(X))^2 - (Y - g(X))^2\right].
+]
+
+This remark is obvious since the expectation operator is linear, it is fundamental though in our construction as we use non-linear estimators of the expectation. More precisely, unknown expectations are estimated by median-of-means (MOM) estimators [2, 43, 73]: given a partition of the dataset into blocks of equal sizes, MOM is the median of the empirical means over each block, see Section **2.2** for details. MOM estimators are naturally more robust than the empirical mean thanks to the median step: if the number of blocks is at least twice that of the outliers, outliers can only affect less than half blocks so MOM remains an acceptable estimator of the mean. MOM’s estimators are non-linear, therefore plugging a MOM estimator into the minimization problem doesn’t yield the same estimator as the plugging estimator on the minimaximization problem. More precisely, it is not so hard to see that MOM minimizers cannot achieve (fast) minimax rates (\mathcal{R}(\delta,\mathcal{F})). This is why we focus in the following on the minimaximization problem.
+
+MOM estimators of the increments of criteria have already been used in [60, 59, 50]. What is new here is that, instead of combining these estimators to build a “tournament” as in [60, 59] or using the approach of Le Cam as in [50], we simply plug these estimators in the minimaximization problem. Our construction is therefore extremely simplified compared to these previous papers, we’ll show that our new estimator achieves the same theoretical properties as these alternatives.
+
+The main difference is that this new estimator is easy to implement. Given ((f_t, g_t)) and
+[
+\ell_f(x,y) = (y - f(x))^2,
+]
+one can find a median block (B_{\mathrm{med}}) such that
+[
+P_{B_{\mathrm{med}}}[\ell_{f_t} - \ell_{g_t}]
+=============================================
+
+\operatorname{median}!\big(P_{B_k}[\ell_{f_t} - \ell_{g_t}],; k \in {1,\ldots,K}\big).
+]
+
+Then one can perform a descent/ascent algorithm over the block (B_{\mathrm{med}}) to get the next iteration ((f_{t+1}, g_{t+1})). In practice though, this basic idea can be substantially improved by shuffling the blocks at each time step, cf. Section **A.8**. The first advantage of this shuffling step is that the algorithm doesn’t converge to local minimaxima.
+
+Furthermore, our algorithm defines a natural notion of *depth of data*: deep data are typically regularly chosen as member of the median block (B_{\mathrm{med}}) while “outliers” on the other hand are typically left aside. This notion of depth, based on the risk function, is natural in our learning framework and should probably be investigated more carefully in future works. It also suggests an empirical definition of outliers and therefore an outliers detection algorithm as a by-product.
+
+The paper is organised as follows. Section **2** introduces formally the classical least-squares learning framework and presents our new estimator, Section **3** details our main theoretical results, that are proved in Section **4**. An extended simulation study is provided in Section **A**, including the presentation of many robust versions of standard optimization algorithms. Theoretical abstract rates derived in the main results are particularized in Section **B** into important problems in Machine Learning to show the extent of our results. These main results focus on penalized version of the basic tests presented in this introduction that are well suited for high dimensional learning frameworks, we complete these results in Section **C**, providing results for the basic estimators without penalizations in small dimension. Finally, Section **D** provides some optimality results for our procedures.
+
+---
+
+## **2 Setting**
+
+Let (\mathcal{X}) denote a measurable space and let ((X,Y)), ((X_i,Y_i)_{i\in[N]}) denote random variables taking values in (\mathcal{X} \times \mathbb{R}). Let (P) denote the distribution of ((X,Y)) and, for (i \in [N]), let (P_i) denote the distribution of ((X_i,Y_i)).
+
+---
+
+Let (F) denote a convex class of functions (f : \mathcal{X} \to \mathbb{R}) and suppose that (F \subset L_P^2), (\mathbb{E}[Y^2] < \infty). For any ((x,y) \in \mathcal{X} \times \mathbb{R}), let
+[
+\ell_f(x,y) = (y - f(x))^2
+]
+denote the square loss function and let (f^*) denote an oracle
+[
+f^* \in \arg\min_{f\in F} P\ell_f
+\qquad \text{where} \qquad
+\forall g \in L_P^1,; Pg = \mathbb{E}[g(X,Y)] .
+]
+
+For any (Q \in {P,(P_i)*{i\in[N]}}) and any (p \ge 1), let
+[
+|f|*{L_Q^p} = (Q|f|^p)^{1/p}
+]
+the (L_Q^p)-norm of (f) whenever it’s defined. Finally, let (|\cdot|) be a norm defined on the span of (F); (|\cdot|) will be used as a regularization norm.
+
+---
+
+## **2.1 Minimaximization**
+
+Since (f^*) minimizes (f \mapsto P\ell_f) and the distribution (P) is unknown, it is estimated in empirical risk minimization [96, 92, 44] by
+[
+\hat f_N
+]
+from minimizing (f \mapsto P_N \ell_f), where for any function (g),
+[
+P_N g = N^{-1} \sum_{i=1}^N g(X_i,Y_i).
+]
+This approach works well when (P_N \ell_f) is close to (P\ell_f) for all functions in (F). This uniform approximation requires strong concentration properties. Moreover, a single outlier can break down all estimators (P_N \ell_f).
+
+A key observation in our analysis is that (f^*) is solution of a minimaximization problem:
+[
+f^* = \arg\min_{f\in F} P\ell_f
+= \arg\min_{f\in F} \sup_{g\in F} P(\ell_f - \ell_g).
+\tag{6}
+]
+
+To estimate the unknown expectations
+[
+T_{\mathrm{id}}(g,f) = P(\ell_f - \ell_g),
+]
+we use a Median-Of-Means (MOM) estimator of the expectation. As this estimator is non-linear, plugging a MOM estimator in the minimaximization problem or in the minimization problem in (6) does not yield the same estimator.
+
+The minimaximization point of view has been considered in [5] and [10, 8]. These papers used bounded modification of the quadratic loss. As for classification, the impact of outliers on the empirical mean is negligible if the loss is bounded and the number of outliers controlled, which ensures robustness. The cost to pay is that the function to be minimized is not convex and is therefore hard to implement. The idea of estimation by aggregation of tests is due to Le Cam [48, 49] and was further developed by Birgé [15], Baraud [11], Baraud, Birgé and Sart [10]. MOM estimators have been recently considered see [60, 50, 59, 61] and Section **2.2** for details. Nevertheless, to the best of our knowledge, this paper is the first to consider the estimators obtained by plugging MOM’s estimators in the minimaximization problem (6). This approach will prove to be efficient for designing algorithms.
+
+---
+
+## **2.2 MOM estimator**
+
+Let (K) denote an integer smaller than (N) and let (B_1,\ldots,B_K) denote a partition of ([N]) into blocks of equal size (N/K) (w.l.o.g. we assume that (K) divides (N) and that (B_1) is made of the first (N/K) data, (B_2) of the next (N/K) data, etc.). For all function (\mathcal{L} : \mathcal{X} \times \mathbb{R} \to \mathbb{R}) and (k \in [K]), let
+[
+P_{B_k}\mathcal{L} = |B_k|^{-1} \sum_{i\in B_k} \mathcal{L}(X_i,Y_i).
+]
+Then (\mathrm{MOM}*K(\mathcal{L})) is a median of the set of (K) real numbers
+[
+{P*{B_1}\mathcal{L},\ldots,P_{B_K}\mathcal{L}}.
+]
+
+We will make an extensive use of empirical medians and quantiles in the following. We now precise some conventions used repeatedly hereafter. For all (\alpha \in (0,1)) and real numbers (x_1,\ldots,x_K), we denote by
+[
+Q_\alpha(x_1,\ldots,x_K)
+========================
+
+\left{
+u \in \mathbb{R} :
+|{k\in[K] : x_k \ge u}| \ge (1-\alpha)K,
+;
+|{k\in[K] : x_k \le u}| \ge \alpha K
+\right}.
+]
+
+Any element in (Q_\alpha(x)) is a ((1-\alpha))-empirical quantile of the vector (x_1,\ldots,x_K). Hereafter, (Q_\alpha(x)) denotes an element in (Q_\alpha(x)). For all (x=(x_1,\ldots,x_K)), (y=(y_1,\ldots,y_K)) and (t\in\mathbb{R}),
+
+[
+\begin{aligned}
+Q_\alpha(x) \ge t
+&\iff
+\sup Q_\alpha(x) \ge t,\
+Q_\alpha(x) \le t
+&\iff
+\inf Q_\alpha(x) \le t,\
+z = Q_\alpha(x) + Q_\alpha(y)
+&\iff
+z \in Q_\alpha(x) + Q_\alpha(y),
+\end{aligned}
+]
+
+where in the last inequality we use the Minkowski sum of two sets. More generally, inequalities involving empirical quantiles are always understood in the worst possible case. For example, one can check that, for all vectors (x) and (y),
+[
+\sup Q_{1/4}(x) + \sup Q_{1/4}(y)
+\le
+\inf Q_{1/2}(x+y).
+]
+
+---
+
+In the following, we will simply write with some abuse of notation that for all vectors (x) and (y):
+[
+Q_{1/4}(x) + Q_{1/4}(y) \le Q_{1/2}(x + y).
+]
+
+Likewise, one can check that
+[
+Q_{1/2}(x - y) \le Q_{3/4}(x) - Q_{1/4}(y)
+\quad\text{and}\quad
+Q_{1/2}(x) \ge -Q_{1/2}(-x).
+]
+Moreover, to prove that (Q_\alpha(x) \ge t) it is enough to prove that (\exists J \subset [K]), (|J| \ge (1-\alpha)K), (\forall k \in J, x_k \ge t) and to prove that (Q_\alpha(x) \le t) it is enough to prove that (\exists J \subset [K]), (|J| \ge \alpha K), (\forall k \in J, x_k \le t).
+
+We conclude this section with the definition of MOM tests and their regularized versions.
+
+---
+
+### **Definition 3.**
+
+Let (\alpha \in (0,1)) and (K \in [N]).
+For all functions (\mathcal{L} : \mathcal{X} \times \mathbb{R} \to \mathbb{R}) the (\alpha)-quantile on (K) blocks of (\mathcal{L}) is
+[
+Q_{\alpha,K}(\mathcal{L}) = Q_\alpha\big((P_{B_k}\mathcal{L})_{k\in[K]}\big).
+]
+In particular, the Median-of-Means (MOM) of (\mathcal{L}) on (K) blocks is defined as
+[
+\mathrm{MOM}*K(\mathcal{L}) = Q*{1/2,K}(\mathcal{L}).
+]
+
+For all (f,g \in F), the **MOM test** on (K) blocks of (g) against (f) is defined by
+[
+T_K(g,f) = \mathrm{MOM}*K(\ell_f - \ell_g)
+]
+and, for a given regularization parameter (\lambda \ge 0), its regularized version is
+[
+T*{K,\lambda}(g,f) = \mathrm{MOM}_K(\ell_f - \ell_g) + \lambda(|f| - |g|).
+]
+
+---
+
+## **2.3 Minimaximization of MOM tests**
+
+We are now in position to define our basic estimators. These are simply obtained by replacing the unknown expectations (P(\ell_f - \ell_g)) in (6) by the (regularized version of the) MOM tests on (K) blocks of (g) against (f).
+
+---
+
+### **Definition 4.**
+
+For any (K \in [N/2]), let
+[
+\hat f_K \in \arg\min_{f\in F}\max_{g\in F} T_K(g,f)
+\quad\text{and}\quad
+\hat f_{K,\lambda} \in \arg\min_{f\in F}\max_{g\in F} T_{K,\lambda}(g,f).
+\tag{7}
+]
+
+One can rewrite our estimators as cost minimization estimators
+[
+\hat f_K \in \arg\min_{f\in F} C_K(f)
+\quad\text{and}\quad
+\hat f_{K,\lambda} \in \arg\min_{f\in F} C_{K,\lambda}(f)
+]
+where for all (f \in F),
+[
+C_K(f) = \sup_{g\in F} T_K(g,f)
+\quad\text{and}\quad
+C_{K,\lambda}(f) = \sup_{g\in F} T_{K,\lambda}(g,f).
+]
+
+These cost functions play a central role in the theoretical analysis of (\hat f_K) and (\hat f_{K,\lambda}) (cf. Section **4**).
+
+Compared to the aggregation of tests by “tournaments” [60, 59], or “Le Cam type” aggregation of tests [50], minimaximization estimators have several advantages. First they are very natural from Eq. (6) and they do not require a proxy for the excess risk or for the (L^2(P_X))-norm, which simplifies the presentation of this estimator. Finally, while building the estimators of [60, 59] or [50] is totally impossible, these new estimators are minimaximization procedures of locally convex–concave functions that could be approximated by a numerical scheme. It is actually easy to “convert” most of the classical algorithms used for “cost minimization” into an algorithm for minimaximization solving (7) (see Section **A** below).
+
+---
+
+### **Remark 1 (K = 1 and ERM).**
+
+If one chooses (K = 1) then for all (f,g \in F),
+[
+T_K(g,f) = P_N(\ell_f - \ell_g)
+]
+and it is straightforward to check that (\hat f_K) and (\hat f_{K,\lambda}) are respectively the Empirical Risk Minimization (ERM) and its regularized version (RERM).
+
+It turns out that, when we choose (K) on a data-driven basis as we do in Section **A.7**, when the proportion of outliers is small and good data have light tails, then the selected number of blocks (\hat K) is equal or close to 1 (cf. Figure **3** below). Therefore, for clean datasets where ERM performs optimally, our procedure matches this optimal estimator.
+
+---
+
+## **3 Assumptions and main results**
+
+Denote by (\mathcal{O} \cup \mathcal{I}) a partition of ([N]), where (\mathcal{O}) has cardinality (|\mathcal{O}|). Data ((X_i,Y_i)*{i\in\mathcal{O}}) are considered as **outliers**, no assumptions on the joint distribution of these data or on their distribution conditionally on data ((X_i,Y_i)*{i\in\mathcal{I}}) is made. These data may not be independent, nor independent from the remaining data. The remaining set ((X_i,Y_i)*{i\in\mathcal{I}}) is the set of **informative data**, that is the ones one can use for estimation. These are hereafter assumed independent. Given the data ((X_i,Y_i)*{i\in[N]}) no one knows in advance which data is informative or not.
+
+---
+
+### **3.1 Assumptions**
+
+All the assumptions we need to get the results involve only first and second moment of the distributions (P,(P_i)_{i\in\mathcal{I}}) on functions in (F) and (Y). In particular, this setting strongly relaxes usual strong concentration assumptions made on the informative data to study ERM estimators.
+
+---
+
+**Assumption 1.**
+There exists (\theta_{r0} > 0) such that for all (f \in F) and all (i \in \mathcal{I}),
+[
+\sqrt{P_i(f - f^*)^2} \le \theta_{r0}\sqrt{P(f - f^*)^2}.
+]
+
+Of course, Assumption **1** holds in the i.i.d. framework, with (\theta_{r0} = 1) and (\mathcal{I} = [N]). The second assumption bounds the correlation between the “noise” (\zeta_i = Y_i - f^*(X_i)) and the shifted class (F - f^*).
+
+---
+
+**Assumption 2.**
+There exists (\theta_m > 0) such that for all (i \in \mathcal{I}) and all (f \in F),
+[
+\operatorname{var}(\zeta_i(f - f^*)(X_i)) \le \theta_m^2 |f - f^*|_{L_P^2}^2 .
+]
+
+Assumption **2** typically holds in the i.i.d. setup when the noise (\zeta = Y - f^*(X)) has uniformly bounded (L^2)-moments conditionally to (X), which holds in the classical framework when (\zeta) is independent of (X) and (\zeta) has a finite (L^2)-moment bounded by (\theta_m). In non-i.i.d. setups, assumption **2** also holds if for all (i \in \mathcal{I}),
+[
+|\zeta|*{L*{P_i}^4} \le \theta_2 < \infty,
+]
+where (\zeta(x,y) = y - f^*(x)) for all (x \in \mathcal{X}) and (y \in \mathbb{R}) and, for every (f \in F),
+[
+|f - f^*|*{L*{P_i}^4} \le \theta_1 |f - f^*|*{L_P^2},
+]
+because, in that case,
+[
+\sqrt{\operatorname{var}*{P_i}(\zeta(f - f^*))}
+\le |\zeta(f - f^*)|*{L*{P_i}^2}
+\le |\zeta|*{L*{P_i}^4}|f - f^*|*{L*{P_i}^4}
+\le \theta_1\theta_2|f - f^*|_{L_P^2},
+]
+and so Assumption **2** holds for (\theta_m = \theta_1\theta_2).
+
+Now, let us introduce a norm equivalence assumption over (F - f^*): we call it a (L^2/L^1) assumption.
+
+---
+
+**Assumption 3.**
+There exists (\theta_0 \ge 1) such that for all (f \in F) and all (i \in \mathcal{I}),
+[
+|f - f^*|_{L_P^2} \le \theta_0 |f - f^*|*{L*{P_i}^1}.
+]
+
+Note that (|f - f^*|*{L*{P_i}^1} \le |f - f^*|*{L*{P_i}^2}) for all (f \in F) and (i \in \mathcal{I}). Therefore, Assumption **1** and Assumption **3** are together equivalent to assume that all the norms (L_P^2, L_{P_i}^2, L_{P_i}^1, i \in \mathcal{I}) are equivalent over (F - f^*). Note also that Assumption **3** is equivalent to the small ball property (cf. [46, 67]) which has been recently used in Learning theory and signal processing. We refer to [47, 55, 66, 68, 69, 79] for examples of distributions satisfying the small ball assumption.
+
+---
+
+**Proposition 1.**
+Let (Z) be a real-valued random variable. The following holds:
+
+1. If there exists (\kappa_0) and (u_0) such that
+   [
+   \mathbb{P}(|Z| > \kappa_0 |Z|_2) \ge u_0
+   ]
+   then
+   [
+   |Z|_2 \le (u_0\kappa_0)^{-1}|Z|_1;
+   ]
+
+2. if there exists (\theta_0) such that (|Z|_2 \le \theta_0|Z|_1), then for any (\kappa_0 < \theta_0^{-1}),
+   [
+   \mathbb{P}(|Z| > \kappa_0 |Z|_2) \ge u_0
+   \quad\text{where}\quad
+   u_0 = (\theta_0^{-1} - \kappa_0)^2 .
+   ]
+
+---
+
+**Proof.** Suppose that there exists (\kappa_0) and (u_0) such that
+[
+\mathbb{P}(|Z| > \kappa_0 |Z|_2) \ge u_0
+]
+then
+[
+|Z|*1 \ge \int*{|z|\ge \kappa_0|Z|_2} |z|, dP_Z(z) \ge u_0\kappa_0 |Z|_2,
+]
+where (P_Z) denotes the probability distribution associated with (Z).
+Conversely, assume that (|Z|_2 \le \theta_0 |Z|_1).
+Let (p = \mathbb{P}(|Z| \ge \kappa_0 |Z|_2)).
+It follows from Paley–Zigmund’s argument [23, Proposition 3.3.1] that
+[
+|Z|_2 \le \theta_0 |Z|_1
+\le \theta_0\big(\mathbb{E}[|Z|\mathbf{1}(|Z|\le \kappa_0|Z|_2)]
+
+* \mathbb{E}[|Z|\mathbf{1}(|Z|\ge \kappa_0|Z|_2)]\big)
+  \le \theta_0 |Z|_2 (\kappa_0 + \sqrt{p}),
+  ]
+  therefore,
+  [
+  p \ge (\theta_0^{-1} - \kappa_0)^2 .
+  ]
+  (\blacksquare)
+
+---
+
+## **3.2 Complexity measures and minimax rates of convergence**
+
+Balls associated with the regularization norm (|\cdot|) and the (L_P^2) norm play a prominent role in learning theory [53, 51]. In particular, for all (\rho \ge 0), the “sub-models”
+[
+B(f^*, \rho) = { f \in F : |f - f^*| \le \rho } = f^* + \rho B
+]
+where
+[
+B = { f \in \operatorname{span}(F) : |f| \le \rho },
+]
+and their “localizations” at various level (r \ge 0), i.e. intersection of (B(f^*,\rho)) with (L_P^2)-balls
+[
+B_2(f^*, r) = { f \in F : |f - f^*|_{L_P^2} \le r },
+]
+are key sets because their Rademacher complexities drive the minimax rates of convergence. Let us introduce these complexity measures.
+
+---
+
+### **Definition 5.**
+
+Let ((\varepsilon_i)*{i\in[N]}) be independent Rademacher random variables (i.e. uniformly distributed in ({-1,1})), independent from ((X_i,Y_i)*{i=1}^N).
+For all (f \in F), (r > 0) and (\rho \in (0,+\infty)), we denote the intersection of the (|\cdot|)-ball of radius (\rho) and the (L_P^2)-norm of radius (r) centered at (f) by
+[
+B_{\mathrm{reg}}(f,\rho,r)
+= B(f,\rho) \cap B_2(f,r)
+= { g \in F : |g - f|_{L_P^2} \le r,\ |g - f| \le \rho }.
+]
+
+Let (\zeta_i = Y_i - f^*(X_i)) for all (i \in \mathcal{I}) and for (\gamma_Q, \gamma_M > 0) define
+[
+r_Q(\rho,\gamma_Q)
+==================
+
+\inf\Big{
+r > 0 :
+\forall J \subset \mathcal{I}, |J| \ge \frac{N}{2},
+\mathbb{E}\sup_{f\in B_{\mathrm{reg}}(f^*,\rho,r)}
+\Big| \sum_{i\in J} \varepsilon_i (f - f^*)(X_i) \Big|
+\le \gamma_Q |J| r
+\Big},
+]
+[
+r_M(\rho,\gamma_M)
+==================
+
+\inf\Big{
+r > 0 :
+\forall J \subset \mathcal{I}, |J| \ge \frac{N}{2},
+\mathbb{E}\sup_{f\in B_{\mathrm{reg}}(f^*,\rho,r)}
+\Big| \sum_{i\in J} \varepsilon_i \zeta_i (f - f^*)(X_i) \Big|
+\le \gamma_M |J| r^2
+\Big},
+]
+and let (\rho \mapsto r(\rho,\gamma_Q,\gamma_M)) be a continuous and non-decreasing function such that for every (\rho > 0),
+[
+r(\rho) = r(\rho,\gamma_Q,\gamma_M)
+\ge \max{ r_Q(\rho,\gamma_Q),\ r_M(\rho,\gamma_M) }.
+]
+
+It follows from Lemma 2.3 in [53] that (r_M) and (r_Q) are continuous and non-decreasing functions. Note that (r_M(\cdot), r_Q(\cdot)) depend on (f^*). According to [53], if one can choose (r(\rho)) equal to the maximum of (r_M(\rho)) and (r_Q(\rho)) then (r(\rho)) is the minimax rate of convergence over (B(f^*,\rho)). Note also that (r_Q) and (r_M) are well defined when (|\mathcal{I}| \ge N/2), which implies that at least half data are informative.
+
+---
+
+## **3.3 The sparsity equation**
+
+To control the risk of our estimator, we bound from above (T_{K,\lambda}(f,f^*)) for all functions (f) far from (f^*) either in (L_P^2)-norm or for the regularization norm (|\cdot|). Recall that
+[
+T_{K,\lambda}(f,f^*)
+= \mathrm{MOM}_K!\left[2\zeta(f-f^*) - (f-f^*)^2\right]
+
+* \lambda(|f^*| - |f|).
+  ]
+
+The multiplier term “(2\zeta(f-f^*))” is the one containing the noise and is therefore the term we will try to control from above using either the quadratic process “((f-f^*)^2)” or the regularization term “(\lambda(|f^*|-|f|))”. To that end we will need both to control from below the quadratic process and the regularization term.
+
+Let (f \in F) and denote (\rho=|f-f^*|). When (|f-f^*|*{L_P^2}) is small, the quadratic term ((f-f^*)^2) will not help to bound from above (T*{K,\lambda}(f,f^*)), one shall only rely on the penalization term (\lambda(|f^*|-|f|)). One can bound from below (|f^*|-|f| \gtrsim \rho) for all (f) close to (f^*) in (L_P^2) using the **sparsity equation** of [56]. First, introduce the subdifferentials of (|\cdot|): for all (f \in F),
+[
+(\partial|\cdot|)_f
+===================
+
+{z^* \in E^* : |f+h| \ge |f| + z^*(h) \text{ for every } h \in E},
+]
+where ((E^*,|\cdot|^*)) is the dual normed space of ((E,|\cdot|)).
+
+For any (\rho>0), let (H_\rho) denote the set of functions “close” to (f^*) in (L_P^2) and at distance (\rho) from (f^*) in regularization norm and let (\Gamma_{f^*}(\rho)) denote the set of subdifferentials of all vectors close to (f^*):
+[
+H_\rho
+======
+
+{f \in F : |f-f^*|=\rho \text{ and } |f-f^*|*{L_P^2} \le r(\rho)},
+\qquad
+\Gamma*{f^*}(\rho)
+==================
+
+\bigcup_{f \in F:|f-f^*|\le \rho/20} (\partial|\cdot|)_f .
+]
+
+If there exists a “sparse” (f^{**}) in ({f \in F : |f^*-f| \le \rho/20}), that is ((\partial|\cdot|)_{f^{**}}) is almost all the unit dual sphere, then (|f|-|f^{**}|) is large for any (f \in H_\rho) so (|f|-|f^*| \ge |f|-|f^{**}|-|f^*-f^{**}|) is large as well. More precisely, let us introduce, for all (\rho>0),
+[
+\Delta(\rho)
+============
+
+\inf_{f \in H_\rho};
+\sup_{z^* \in \Gamma_{f^*}(\rho)}
+z^*(f-f^*).
+]
+
+The sparsity equation, introduced in [56], quantifies these notions of “large”.
+
+---
+
+### **Definition 6.**
+
+A radius (\rho>0) is said to satisfy the **sparsity equation** when
+[
+\Delta(\rho) \ge \frac{4\rho}{5}.
+]
+
+One can check that, if (\rho^*) satisfies the sparsity equation, so do all (\rho \ge \rho^*). Therefore, one can define
+[
+\rho^* = \inf\left{\rho>0 : \Delta(\rho) \ge \frac{4\rho}{5}\right}.
+]
+
+Note that if (\rho \ge 20|f^*|) then (0 \in \Gamma_{f^*}(\rho)). Moreover, ((\partial|\cdot|)_0) equals the dual ball (i.e. the unit ball of ((E^*,|\cdot|^*))) and so (\Delta(\rho)=\rho). This implies that any (\rho \ge 20|f^*|) satisfies the sparsity equation. This simple observation will be used to get “complexity-dependent rates of convergence” as in [52].
+
+---
+
+## **3.4 Main results**
+
+Our first results study the performance of the estimators (\hat f_{K,\lambda}) for a fixed value of (K). The other ones will provide an adaptive way to select (K).
+
+---
+
+### **Theorem 1.**
+
+Grant Assumptions **1**, **2** and **3** and let (r_Q, r_M) denote the functions introduced in Definition **5**. Assume that
+[
+N \ge 384(\theta_0\theta_{r0})^2
+\quad\text{and}\quad
+|\mathcal{O}| \le \frac{N}{768\theta_0^2}.
+]
+Let (\rho^*) be solution to the sparsity equation from Definition **6**. Let (K^*) denote the smallest integer such that
+[
+K^* \ge \frac{N\varepsilon^2}{384\theta_m^2}, r^2(\rho^*).
+]
+
+---
+
+where
+[
+\varepsilon = \frac{1}{833\theta_0^2}
+]
+and ( r^2(\cdot) ) is defined in Definition 5 for
+[
+\gamma_Q = (384\theta_0)^{-1} \quad \text{and} \quad \gamma_M = \varepsilon/192 .
+]
+For any ( K \ge K^* ), define the radius ( \rho_K ) and the regularization parameter as
+[
+r^2(\rho_K) = \frac{384\theta_m^2}{\varepsilon^2}\frac{K}{N}
+\quad \text{and} \quad
+\lambda = \frac{16\varepsilon r^2(\rho_K)}{\rho_K}.
+]
+
+Assume that for every ( i \in \mathcal I ),
+[
+K \in [\max(K^*, |\mathcal O|), N]
+]
+and ( f \in \mathcal F ) such that ( |f - f^*| \le \rho ) for
+[
+\rho \in [\rho_K, 2\rho_K],
+]
+one has
+[
+\big| P_i \zeta(f - f^*) - P\zeta(f - f^*) \big|
+\le
+\varepsilon \max!\left(
+r_M^2(\rho, \gamma_M),
+\frac{384\theta_m^2}{\varepsilon^2}\frac{K}{N}|f - f^*|_{L_P^2}^2
+\right).
+\tag{8}
+]
+
+Then, for all
+[
+K \in [\max(K^*, 8|\mathcal O|), N/(96(\theta_0\theta_r)^2)],
+]
+with probability larger than ( 1 - 4\exp(-7K/9216) ), the estimator
+( \hat f_{K,\lambda} ) defined in Section 2.3 satisfies
+[
+|\hat f_{K,\lambda} - f^*| \le 2\rho_K,
+\qquad
+|\hat f_{K,\lambda} - f^*|*{L_P^2} \le r(2\rho_K),
+]
+and
+[
+R(\hat f*{K,\lambda}) \le R(f^*) + (1 + 52\varepsilon) r^2(2\rho_K).
+]
+
+---
+
+**Remark 2 (connexion between the ( P_i, i \in \mathcal I ) and ( P )).**
+Assumption (8) holds for instance when for every ( i \in \mathcal I ) and
+( f \in \mathcal F ) one has
+[
+|Y_i - f^*(X_i)|_{L_2} \le |Y - f^*(X)|*{L_2},
+\qquad
+|Y_i - f(X_i)|*{L_2} \ge |Y - f(X)|*{L_2},
+]
+and
+[
+|f^*(X_i) - f(X_i)|*{L_2} \le |f^*(X) - f(X)|_{L_2}.
+]
+
+These assumptions involve second moments associated with ( P ) and
+( (P_i)*{i\in\mathcal I} ). As a consequence, if the metrics
+( L*{P_i}^2 ) for ( i \in \mathcal I ) and ( L_P^2 ) coincide on the functions
+( x \mapsto (f - f^*)(x) ) and ( (x,y) \mapsto y - f(x) ) and the ( P_i ) satisfy Assumptions 2 and 3, then Theorem 1 holds. This means that we only need informative data to induce the same ( L_2 ) metric as ( P ) to estimate the oracle ( f^* ), even if we do not have any observation coming from ( P ) itself. This setup relaxes the classical i.i.d. where all data are generated from ( P ). In this setting, our estimators achieve the same results as the ERM would if data were all i.i.d. with a noise ( \zeta ) independent of ( X ) and both ( X ) and ( \zeta ) had a Gaussian distribution (see Section D).
+
+The function ( r(\cdot) ) is used to define the regularization parameter, so it cannot depend on ( f^* ). When ( r_M(\cdot), r_Q(\cdot) ) depend on ( f^* ), ( r ) should be a computable upper bound independent from ( f^* ).
+
+---
+
+### 3.4.1 Adaptive choice of ( K )
+
+In Theorem 1, all rates depend on the choice of the tuning parameter ( K ).
+The following construction inspired from Lepski’s method provides an adaptive choice of this parameter. Let us first recall the definition of empirical criterion introduced in Section 2.3 and the associated confidence regions: for all ( J \in [K] ), ( \lambda > 0 ), ( f \in \mathcal F ) and absolute constant ( c_{ad} > 0 ),
+[
+C_{J,\lambda}(f) = \sup_{g \in \mathcal F} T_{J,\lambda}(g,f)
+\quad \text{and} \quad
+\hat{\mathcal R}*{J,c*{ad}} =
+\left{
+f \in \mathcal F :
+C_{J,\lambda}(f) \le \frac{c_{ad}}{\theta_0^2} r^2(\rho_J)
+\right},
+]
+where
+[
+T_{J,\lambda}(g,f) = \mathrm{MOM}_J(\ell_f - \ell_g) + \lambda(|f| - |g|).
+]
+
+For all
+[
+J \in [\max(K^*, 8|\mathcal O|), N/(96(\theta_0\theta_r)^2)],
+]
+let
+[
+\hat K_{c_{ad}} =
+\inf \left{
+K \in [\max(K^*, 8|\mathcal O|), N/(96(\theta_0\theta_r)^2)] :
+\bigcap_{J=K}^{N/(96(\theta_0\theta_r)^2)} \hat{\mathcal R}*{J,c*{ad}} \neq \varnothing
+\right},
+]
+and choose
+[
+\hat f_{c_{ad}} \in \bigcap_{J=\hat K_{c_{ad}}}^{N/(96(\theta_0\theta_r)^2)} \hat{\mathcal R}*{J,c*{ad}}.
+]
+
+The following theorem shows the performance of these estimators.
+
+---
+
+**Theorem 2.** *Grant the assumptions of Theorem 1 and assume moreover that*
+[
+|\mathcal O| \le \frac{N}{768\theta_0^2\theta_r^2}.
+]
+For any
+[
+K \in [\max(K^*, 8|\mathcal O|),, N/(96(\theta_0\theta_r)^2)],
+]
+with probability larger than
+[
+1 - 4\exp(-K/2304)
+= 1 - 4\exp!\left(-\varepsilon^2 N r^2(\rho_K)/884736\right),
+]
+one has
+[
+|\hat f_{c_{ad}} - f^*| \le 2\rho_K,
+\qquad
+|\hat f_{c_{ad}} - f^*|*{L_P^2} \le r(2\rho_K),
+]
+and
+[
+R(\hat f*{c_{ad}}) \le R(f^*) + (1 + 52\varepsilon) r^2(2\rho_K),
+]
+where
+[
+c_{ad} = \frac{18}{833}
+\quad \text{and} \quad
+\varepsilon = (833\theta_0^2)^{-1}.
+]
+
+In particular, for ( K = K^* ), we have
+[
+r(2\rho_{K^*}) = \max!\left(r(2\rho^*), \sqrt{|\mathcal O|/N}\right).
+]
+Therefore, if
+[
+r(2\rho^*) \le c_1 r(\rho^*)
+]
+holds for some absolute constant ( c_1 ), then the breakdown number of
+( \hat f_{c_{ad}} ) is larger than ( N r(\rho^*)^2 ).
+
+---
+
+**Remark 3 (deviation parameter).**
+Note that ( r(\cdot) ) is any continuous, non-decreasing function such that for all
+( \rho > 0 ),
+[
+r(\rho) \ge \max\big(r_Q(\rho,\gamma_Q),, r_M(\rho,\gamma_M)\big).
+]
+In particular, if
+[
+r_*(\rho) := \max\big(r_Q(\rho,\gamma_Q),, r_M(\rho,\gamma_M)\big)
+]
+is itself a continuous function (it is clearly non-decreasing), then for every ( x > 0 ),
+[
+r(\rho) = r_*(\rho) + \frac{x}{N}
+]
+is another non-decreasing upper bound. Therefore, one can derive results similar to those in Theorem 2 but with an extra confidence parameter: for all ( x > 0 ), with probability at least
+[
+1 - 4\exp(-c_0 N r^2(\rho_{K^*}) + c_0 x),
+]
+[
+|\hat f_{c_{ad}} - f^*| \le 2\rho_K,
+\qquad
+|\hat f_{c_{ad}} - f^*|*{L_P^2} \le r**(2\rho_K) + \frac{x}{N},
+]
+and
+[
+R(\hat f_{c_{ad}}) \le R(f^*) + (1 + 52\varepsilon)!\left(r^2(2\rho_K) + \frac{x}{N}\right).
+]
+
+Note however that ( \hat f_{c_{ad}} ) depends on ( x ) through the regularization parameter
+[
+\lambda = \frac{16\varepsilon\big(r_*(\rho_K) + x/N\big)}{\rho_K}.
+]
+
+---
+
+## 4 Proofs
+
+Recall the quadratic / multiplier decomposition of the difference of losses: for all
+( f, g \in \mathcal F ), ( x \in \mathcal X ), and ( y \in \mathbb R ),
+[
+\ell_f(x,y) - \ell_g(x,y)
+= (y - f(x))^2 - (y - g(x))^2
+]
+[
+= (f(x) - g(x))^2 + 2(y - g(x))(g(x) - f(x)).
+\tag{9}
+]
+
+Upper and lower bounds on ( T_K(\cdot,\cdot) ) follow from a study of “quadratic” and “multiplier” quantiles of mean processes. As no assumption is granted on the outliers, any block of data containing one or more of these outliers is “lost” from our perspective, meaning that empirical means over these blocks cannot be controlled.
+
+Let ( \mathcal K ) denote the set of blocks which have not been corrupted by outliers:
+[
+\mathcal K = {, k \in [K] : B_k \subset \mathcal I ,}.
+\tag{10}
+]
+
+If ( k \in \mathcal K ), all data indexed by ( B_k ) are informative. We will show that controls on the blocks indexed by ( \mathcal K ) are sufficient to insure statistical performance of MOM estimators.
+
+---
+
+### 4.1 Bounding quadratic and multiplier processes
+
+The first result is a lower bound on the quantiles of means quadratic processes.
+
+---
+
+**Lemma 1.** *Grant Assumptions* **1** *and* **3**. Fix
+[
+\eta \in (0,1), \quad \rho \in (0,+\infty)
+]
+and let ( \alpha, \gamma, \gamma_Q, x ) be positive numbers such that
+[
+\gamma(1-\alpha-x-16\gamma_Q\theta_0) \ge 1-\eta.
+]
+Assume that
+[
+K \in \big[,|\mathcal O|/(1-\gamma),; N\alpha/(2\theta_0\theta_{r_0})^2 ,\big].
+]
+Then there exists an event ( \Omega_Q(K) ) such that
+[
+\mathbb P(\Omega_Q(K)) \ge 1-\exp(-K\gamma x^2/2),
+]
+and, on ( \Omega_Q(K) ): for all ( f \in \mathcal F ) such that
+[
+|f-f^*| \le \rho,
+\quad \text{if } |f-f^*|*{L_P^2} \ge r_Q(\rho,\gamma_Q) \text{ then}
+]
+[
+\Big|\big{k \in [K] : P*{B_k}(f-f^*)^2 \ge (4\theta_0)^{-2}|f-f^*|_{L_P^2}^2 \big}\Big|
+\ge (1-\eta)K.
+]
+
+In particular,
+[
+Q_{\eta,K}\big((f-f^*)^2\big) \ge (4\theta_0)^{-2}|f-f^*|_{L_P^2}^2 .
+]
+
+---
+
+**Proof.** Define
+[
+\mathcal F_\rho^* = B(f^*,\rho)
+= { f \in \mathcal F : |f-f^*| \le \rho }.
+]
+For all ( f \in \mathcal F_\rho^* ), let
+[
+n_f = \frac{f-f^*}{|f-f^*|*{L_P^2}}
+]
+and note that for all ( i \in \mathcal I ),
+[
+P_i|n_f| \ge \theta_0^{-1}
+\quad \text{by Assumption 3}
+]
+and
+[
+P_i n_f^2 \le \theta*{r_0}^2
+\quad \text{by Assumption 1}.
+]
+It follows from Markov’s inequality that, for all ( k \in \mathcal K )
+(( \mathcal K ) is defined in (10)),
+[
+\mathbb P!\left(
+\big|P_{B_k}|n_f| - \overline P_{B_k}|n_f|\big|
+
+> \frac{\theta_{r_0}}{\sqrt{\alpha |B_k|}}
+> \right)
+> \le \alpha,
+> ]
+> where
+> [
+> \overline P_{B_k}|n_f|
+> = |B_k|^{-1}\sum_{i\in B_k}\mathbb E|n_f(X_i)|
+> \ge \theta_0^{-1},
+> ]
+> and therefore,
+> [
+> \mathbb P!\left(
+> P_{B_k}|n_f| \ge \frac{1}{\theta_0}
+
+* \frac{\theta_{r_0}}{\sqrt{\alpha |B_k|}}
+  \right)
+  \ge 1-\alpha .
+  ]
+
+Since
+[
+K \le N\alpha/(2\theta_0\theta_{r_0})^2,
+\quad |B_k| = N/K \ge (2\theta_0\theta_{r_0})^2/\alpha,
+]
+and so
+[
+\mathbb P\big(2\theta_0 P_{B_k}|n_f| \ge 1\big) \ge 1-\alpha .
+\tag{11}
+]
+
+Let ( \phi ) be the function defined on ( \mathbb R_+ ) by
+[
+\phi(t) = (t-1)\mathbb I(1\le t\le 2) + \mathbb I(t\ge 2),
+]
+and, for all ( f \in \mathcal F_\rho^* ), let
+[
+Z(f) = \sum_{k\in[K]} \mathbb I(4\theta_0 P_{B_k}|n_f| \ge 1).
+]
+Since for all ( x\in\mathbb R ), ( \mathbb I(x\ge 1)\ge \phi(x) ),
+[
+Z(f) \ge \sum_{k\in\mathcal K} \phi(4\theta_0 P_{B_k}|n_f|).
+]
+
+Now, for any ( x\in\mathbb R_+ ), ( \phi(x)\ge \mathbb I(x\ge 2) );
+thus, according to (11),
+[
+\mathbb E!\left[\sum_{k\in\mathcal K}\phi(4\theta_0 P_{B_k}|n_f|)\right]
+\ge \sum_{k\in\mathcal K}
+\mathbb P(4\theta_0 P_{B_k}|n_f|\ge 2)
+\ge |\mathcal K|(1-\alpha).
+]
+
+Therefore,
+[
+Z(f) \ge |\mathcal K|(1-\alpha)
+
+* \sum_{k\in\mathcal K}
+  \Big(\phi(4\theta_0 P_{B_k}|n_f|)
+
+- \mathbb E[\phi(4\theta_0 P_{B_k}|n_f|)]\Big).
+  ]
+
+Denote
+[
+\mathcal F = { f\in\mathcal F :
+|f-f^*|\le\rho,;
+|f-f^*|*{L_P^2}\ge r_Q(\rho,\gamma_Q) }.
+]
+By the bounded difference inequality (see, for instance [17, Theorem 6.2]),
+there exists an event ( \Omega_Q(K) ) with probability larger than
+[
+1-\exp(-x^2|\mathcal K|/2),
+]
+on which, for all ( f\in\mathcal F ),
+[
+\sup*{f\in\mathcal F}
+\left|
+\sum_{k\in\mathcal K}
+\big(\phi(4\theta_0 P_{B_k}|n_f|)
+
+* \mathbb E[\phi(4\theta_0 P_{B_k}|n_f|)]\big)
+  \right|
+  \le
+  \mathbb E\sup_{f\in\mathcal F}
+  \left|
+  \sum_{k\in\mathcal K}
+  \big(\phi(4\theta_0 P_{B_k}|n_f|)
+* \mathbb E[\phi(4\theta_0 P_{B_k}|n_f|)]\big)
+  \right|
+
+- |\mathcal K|x .
+  ]
+
+By the symmetrization argument,
+[
+\mathbb E\sup_{f\in\mathcal F}
+\left|
+\sum_{k\in\mathcal K}
+\big(\phi(4\theta_0 P_{B_k}|n_f|)
+
+* \mathbb E[\phi(4\theta_0 P_{B_k}|n_f|)]\big)
+  \right|
+  \le
+  2\mathbb E\sup_{f\in\mathcal F}
+  \left|
+  \sum_{k\in\mathcal K}
+  \varepsilon_k \phi(4\theta_0 P_{B_k}|n_f|)
+  \right|.
+  ]
+
+---
+
+Since the function ( \phi ) is 1-Lipschitz and ( \phi(0)=0 ), by the contraction principle (see, for example [57, Chapter 4] or [17, Theorem 11.6]), we have
+[
+\mathbb E \sup_{f\in\mathcal F}
+\left|
+\sum_{k\in\mathcal K} \varepsilon_k \phi(4\theta_0 P_{B_k}|n_f|)
+\right|
+\le
+4\theta_0,
+\mathbb E \sup_{f\in\mathcal F}
+\left|
+\sum_{k\in\mathcal K} \varepsilon_k P_{B_k}|n_f|
+\right|.
+]
+
+The family
+[
+(\varepsilon_{[i]} n_f(X_i) : i\in \cup_{k\in\mathcal K} B_k),
+\quad \text{where } [i]=\lceil i/K\rceil \text{ for all } i\in\mathcal I,
+]
+is a collection of centered random variables. Therefore, if
+( (\varepsilon_k')*{k\in\mathcal K} ) and ( (X_i')*{i\in\mathcal I} )
+denote independent copies of
+( (\varepsilon_k)*{k\in\mathcal K} ) and ( (X_i)*{i\in\mathcal I} )
+then
+[
+\mathbb E \sup_{f\in\mathcal F}
+\left|
+\sum_{k\in\mathcal K} \varepsilon_k P_{B_k}|n_f|
+\right|
+\le
+\mathbb E \sup_{f\in\mathcal F}
+\left|
+\sum_{k\in\mathcal K}
+\frac{1}{|B_k|}
+\sum_{i\in B_k}
+\big(
+\varepsilon_k n_f(X_i)
+----------------------
+
+\varepsilon_k' n_f(X_i')
+\big)
+\right|.
+]
+
+Then, as ( (X_i)*{i\in\mathcal I} ) and ( (X_i')*{i\in\mathcal I} ) are two independent families of independent variables, therefore, if
+( (\varepsilon_i'')*{i\in\mathcal I} )
+denote a family of i.i.d. Rademacher variables independent of
+( (\varepsilon_i),(\varepsilon_k'),(X_i),(X_i') ),
+then
+[
+(\varepsilon_k n_f(X_i)-\varepsilon_k' n_f(X_i'))
+\quad \text{and} \quad
+\varepsilon_i''(\varepsilon_k n_f(X_i)-\varepsilon_k' n_f(X_i'))
+]
+have the same distribution. Therefore,
+[
+\mathbb E \sup*{f\in\mathcal F}
+\left|
+\sum_{k\in\mathcal K}
+\frac{1}{|B_k|}
+\sum_{i\in B_k}
+(\varepsilon_k n_f(X_i)-\varepsilon_k' n_f(X_i'))
+\right|
+\le
+\mathbb E \sup_{f\in\mathcal F}
+\left|
+\sum_{k\in\mathcal K}
+\frac{1}{|B_k|}
+\sum_{i\in B_k}
+\varepsilon_i''
+(\varepsilon_k n_f(X_i)-\varepsilon_k' n_f(X_i'))
+\right|.
+]
+
+# [
+
+\mathbb E \sup_{f\in\mathcal F}
+\left|
+\sum_{k\in\mathcal K}
+\frac{1}{|B_k|}
+\sum_{i\in B_k}
+\varepsilon_i''
+\big(
+|n_f(X_i)|-|n_f(X_i')|
+\big)
+\right|
+\le
+\frac{2K}{N}
+\mathbb E \sup_{f\in\mathcal F}
+\left|
+\sum_{i\in\cup_{k\in\mathcal K} B_k}
+\varepsilon_i n_f(X_i)
+\right|.
+]
+
+By the contraction principle, on ( \Omega_Q(K) ),
+[
+Z(f)
+\ge
+|\mathcal K|
+\left(
+1-\alpha-x
+----------
+
+\frac{16\theta_0 K}{|\mathcal K|N}
+\mathbb E \sup_{f\in\mathcal F}
+\left|
+\sum_{i\in\cup_{k\in\mathcal K} B_k}
+\varepsilon_i n_f(X_i)
+\right|
+\right).
+\tag{12}
+]
+
+For any ( f\in\mathcal F ),
+[
+r_Q(\rho,\gamma_Q)n_f+f^* \in \mathcal F
+\quad \text{because } \mathcal F \text{ is convex}.
+]
+Moreover,
+[
+|r_Q(\rho,\gamma_Q)n_f|_{L_P^2}
+===============================
+
+r_Q(\rho,\gamma_Q),
+\quad
+|r_Q(\rho,\gamma_Q)n_f|
+=======================
+
+\frac{r_Q(\rho,\gamma_Q)}{|f-f^*|_{L_P^2}}|f-f^*|
+\le \rho.
+]
+Therefore,
+[
+r_Q(\rho,\gamma_Q)n_f+f^* \in \mathcal F.
+]
+Therefore, by definition of ( r_Q(\rho,\gamma_Q) ),
+[
+\mathbb E \sup_{f\in\mathcal F}
+\left|
+\sum_{i\in\cup_{k\in\mathcal K} B_k}
+\varepsilon_i n_f(X_i)
+\right|
+=======
+
+\frac{1}{r_Q(\rho,\gamma_Q)}
+\mathbb E
+\sup_{\substack{f\in\mathcal F:\
+|f-f^*|\le\rho,\
+|f-f^*|*{L_P^2}=r_Q(\rho,\gamma_Q)}}
+\left|
+\sum*{i\in\cup_{k\in\mathcal K} B_k}
+\varepsilon_i (f-f^*)(X_i)
+\right|
+\le
+\gamma_Q
+\frac{|\mathcal K|N}{K}.
+]
+
+Using the last inequality together with (12) and the assumption
+( K\ge |\mathcal O|/(1-\gamma) )
+(so that ( |\mathcal K|\ge K-|\mathcal O|\ge \gamma K )),
+we get that, on the event ( \Omega_Q(K) ), for any ( f\in\mathcal F ),
+[
+Z(f)
+\ge
+|\mathcal K|
+\big(
+1-\alpha-x-16\theta_0\gamma_Q
+\big)
+\ge
+(1-\eta)K.
+]
+
+Hence, on ( \Omega_Q(K) ), for any ( f\in\mathcal F ),
+there exists at least ( (1-\eta)K ) blocks ( B_k ) for which
+[
+P_{B_k}|n_f| \ge (4\theta_0)^{-1}.
+]
+On these blocks,
+[
+P_{B_k} n_f^2 \ge (P_{B_k}|n_f|)^2 \ge (4\theta_0)^{-2},
+]
+therefore, on ( \Omega_Q(K) ),
+[
+Q_{\eta,K}(n_f^2) \ge (4\theta_0)^{-2}.
+\quad\blacksquare
+]
+
+Now, let us turn to a control of the multiplier process.
+
+---
+
+**Lemma 2.** *Grant Assumption* **2**. Fix
+[
+\eta\in(0,1), \quad \rho\in(0,+\infty),
+]
+and let ( \alpha,\gamma_M,\gamma,x ) and ( \varepsilon ) be positive absolute constants such that
+[
+\gamma(1-\alpha-x-8\gamma_M/\varepsilon) \ge 1-\eta.
+]
+Let
+[
+K \in [,|\mathcal O|/(1-\gamma),, N ,].
+]
+There exists an event ( \Omega_M(K) ) such that
+[
+\mathbb P(\Omega_M(K)) \ge 1-\exp(-\gamma K x^2/2)
+]
+and on the event ( \Omega_M(K) ): if ( f\in\mathcal F ) is such that
+[
+|f-f^*|\le\rho
+]
+then
+[
+\Big|
+\big{k\in\mathcal K :
+|2(P_{B_k}-\overline P_{B_k})\zeta(f-f^*)|
+\le
+\varepsilon
+\max!\left(
+\frac{16\theta_m^2}{\varepsilon^2}\frac{K}{N},
+, r_M^2(\rho,\gamma_M)|f-f^*|_{L_P^2}^2
+\right)
+\big}
+\Big|
+\ge
+(1-\eta)K.
+]
+
+---
+
+**Proof.** For all ( k \in [K] ) and ( f \in \mathcal F ), set
+[
+W_k = \big((X_i,Y_i)*{i\in B_k}\big)
+]
+and define
+[
+g_f(W_k) = 2(P*{B_k}-\overline P_{B_k})(\zeta(f-f^*))
+\quad\text{and}\quad
+\gamma_k(f) =
+\varepsilon
+\max!\left(
+\frac{16\theta_m^2}{\varepsilon^2\alpha}\frac{K}{N},
+, r_M^2(\rho,\gamma_M)|f-f^*|_{L_P^2}^2
+\right).
+]
+
+Let ( f\in\mathcal F ) and ( k\in\mathcal K ). It follows from Markov’s inequality that
+[
+\mathbb P!\left[2|g_f(W_k)| \ge \gamma_k(f)\right]
+\le
+\frac{
+4,\mathbb E!\left[(2(P_{B_k}-\overline P_{B_k})(\zeta(f-f^*)))^2\right]
+}{
+\frac{16\theta_m^2}{\alpha}|f-f^*|*{L_P^2}^2 \frac{K}{N}
+}
+]
+[
+\le
+\frac{\alpha\sum*{i\in B_k}\operatorname{var}*{P_i}(\zeta(f-f^*))}
+{|B_k|\theta_m^2|f-f^*|*{L_P^2}^2\frac{K}{N}}
+\le
+\frac{\alpha\theta_m^2|f-f^*|_{L_P^2}^2}
+{|B_k|\theta_m^2|f-f^*|_{L_P^2}^2\frac{K}{N}}
+= \alpha .
+\tag{13}
+]
+
+Let
+[
+J=\bigcup_{k\in\mathcal K} B_k
+\quad\text{and}\quad
+r_M(\rho)=r_M(\rho,\gamma_M).
+]
+We have
+[
+\mathbb E
+\sup_{f\in B(f^*,\rho)}
+\sum_{k\in\mathcal K}
+\varepsilon_k\frac{g_f(W_k)}{\gamma_k(f)}
+\le
+2\mathbb E
+\sup_{f\in B(f^*,\rho)}
+\left|
+\sum_{k\in\mathcal K}
+\varepsilon_k
+\frac{(P_{B_k}-\overline P_{B_k})(\zeta(f-f^*))}
+{\varepsilon\max(r_M^2(\rho),|f-f^*|*{L_P^2}^2)}
+\right|
+]
+[
+\le
+\frac{2}{\varepsilon r_M^2(\rho)}
+\mathbb E
+\Bigg[
+\sup*{\substack{f\in B(f^*,\rho):\|f-f^*|*{L_P^2}\ge r_M(\rho)}}
+\left|
+\sum*{k\in\mathcal K}
+\varepsilon_k
+(P_{B_k}-\overline P_{B_k})
+!\left(\zeta, r_M(\rho)\frac{f-f^*}{|f-f^*|*{L_P^2}}\right)
+\right|
+]
+[
+\vee
+\sup*{\substack{f\in B(f^*,\rho):\|f-f^*|*{L_P^2}\le r_M(\rho)}}
+\left|
+\sum*{k\in\mathcal K}
+\varepsilon_k
+(P_{B_k}-\overline P_{B_k})(\zeta(f-f^*))
+\right|
+\Bigg]
+]
+[
+\le
+\frac{2}{\varepsilon r_M^2(\rho)}
+\mathbb E
+\sup_{\substack{f\in B(f^*,\rho):\|f-f^*|*{L_P^2}\le r_M(\rho)}}
+\left|
+\sum*{k\in\mathcal K}
+\varepsilon_k
+(P_{B_k}-\overline P_{B_k})(\zeta(f-f^*))
+\right|,
+]
+where in the last but one inequality we used that the class ( \mathcal F ) is convex and the same argument as in the proof of Lemma 1.
+Since
+[
+(\varepsilon_i(\zeta_i(f-f^*)(X_i)-P_i\zeta(f-f^*)):,i\in\mathcal I)
+]
+is a family of centered random variables, one can use the symmetrization argument to get
+[
+\mathbb E
+\sup_{f\in B(f^*,\rho)}
+\sum_{k\in\mathcal K}
+\varepsilon_k\frac{g_f(W_k)}{\gamma_k(f)}
+\le
+\frac{4K}{\varepsilon r_M^2(\rho)N}
+\mathbb E
+\sup_{\substack{f\in B(f^*,\rho):\|f-f^*|*{L_P^2}\le r_M(\rho)}}
+\left|
+\sum*{i\in J}
+\varepsilon_i \zeta_i(f-f^*)(X_i)
+\right|
+]
+[
+\le
+\frac{4K}{\varepsilon N}\gamma_M|\mathcal K|\frac{N}{K}
+=======================================================
+
+\frac{4\gamma_M}{\varepsilon}|\mathcal K|.
+\tag{14}
+]
+
+Here the definition of ( r_M(\rho) ) has been used in the last but one inequality.
+
+Let
+[
+\psi(t)=(2t-1)\mathbb I(1/2\le t\le1)+\mathbb I(t\ge1).
+]
+The function ( \psi ) is 2-Lipschitz and satisfies
+[
+\mathbb I(t\ge1)\le\psi(t)\le\mathbb I(t\ge1/2),
+\quad\forall t\in\mathbb R.
+]
+Therefore, all ( f\in B(f^*,\rho) ) satisfy
+[
+\sum_{k\in\mathcal K}\mathbb I(|g_f(W_k)|<\gamma_k(f))
+======================================================
+
+## |\mathcal K|
+
+\sum_{k\in\mathcal K}\mathbb I!\left(\frac{|g_f(W_k)|}{\gamma_k(f)}\ge1\right)
+]
+[
+\ge
+|\mathcal K|
+------------
+
+\sum_{k\in\mathcal K}\psi!\left(\frac{|g_f(W_k)|}{\gamma_k(f)}\right)
+]
+[
+=
+
+## |\mathcal K|
+
+## \sum_{k\in\mathcal K}\mathbb E\psi!\left(\frac{|g_f(W_k)|}{\gamma_k(f)}\right)
+
+\sum_{k\in\mathcal K}
+\left[
+\psi!\left(\frac{|g_f(W_k)|}{\gamma_k(f)}\right)
+------------------------------------------------
+
+\mathbb E\psi!\left(\frac{|g_f(W_k)|}{\gamma_k(f)}\right)
+\right]
+]
+[
+\ge
+|\mathcal K|
+------------
+
+## \sum_{k\in\mathcal K}\mathbb E\mathbb I!\left(\frac{|g_f(W_k)|}{\gamma_k(f)}\ge\frac12\right)
+
+\sum_{k\in\mathcal K}
+\left[
+\psi!\left(\frac{|g_f(W_k)|}{\gamma_k(f)}\right)
+------------------------------------------------
+
+\mathbb E\psi!\left(\frac{|g_f(W_k)|}{\gamma_k(f)}\right)
+\right]
+]
+[
+\ge
+(1-\alpha)|\mathcal K|
+----------------------
+
+\sup_{f\in B(f^*,\rho)}
+\left|
+\sum_{k\in\mathcal K}
+\left[
+\psi!\left(\frac{|g_f(W_k)|}{\gamma_k(f)}\right)
+------------------------------------------------
+
+\mathbb E\psi!\left(\frac{|g_f(W_k)|}{\gamma_k(f)}\right)
+\right]
+\right|.
+]
+
+---
+
+where we used **(13)** in the last inequality.
+
+The bounded difference inequality ensures that there exists an event
+( \Omega_M(K) ) satisfying
+[
+\mathbb P(\Omega_M(K)) \ge 1-\exp(-x^2|\mathcal K|/2),
+]
+where
+[
+\sup_{f\in B(f^*,\rho)}
+\left|
+\sum_{k\in\mathcal K}
+\left[
+\psi!\left(\frac{|g_f(W_k)|}{\gamma_k(f)}\right)
+------------------------------------------------
+
+\mathbb E\psi!\left(\frac{|g_f(W_k)|}{\gamma_k(f)}\right)
+\right]
+\right|
+]
+[
+\le
+\mathbb E
+\sup_{f\in B(f^*,\rho)}
+\left|
+\sum_{k\in\mathcal K}
+\left[
+\psi!\left(\frac{|g_f(W_k)|}{\gamma_k(f)}\right)
+------------------------------------------------
+
+\mathbb E\psi!\left(\frac{|g_f(W_k)|}{\gamma_k(f)}\right)
+\right]
+\right|
++|\mathcal K|x .
+]
+
+Furthermore, it follows from the symmetrization argument that
+[
+\mathbb E
+\sup_{f\in B(f^*,\rho)}
+\left|
+\sum_{k\in\mathcal K}
+\left[
+\psi!\left(\frac{|g_f(W_k)|}{\gamma_k(f)}\right)
+------------------------------------------------
+
+\mathbb E\psi!\left(\frac{|g_f(W_k)|}{\gamma_k(f)}\right)
+\right]
+\right|
+\le
+2\mathbb E
+\sup_{f\in B(f^*,\rho)}
+\left|
+\sum_{k\in\mathcal K}
+\varepsilon_k
+\psi!\left(\frac{|g_f(W_k)|}{\gamma_k(f)}\right)
+\right|.
+]
+
+And, from the contraction principle and **(14)**, that
+[
+\mathbb E
+\sup_{f\in B(f^*,\rho)}
+\left|
+\sum_{k\in\mathcal K}
+\varepsilon_k
+\psi!\left(\frac{|g_f(W_k)|}{\gamma_k(f)}\right)
+\right|
+\le
+2\mathbb E
+\sup_{f\in B(f^*,\rho)}
+\left|
+\sum_{k\in\mathcal K}
+\varepsilon_k
+\frac{|g_f(W_k)|}{\gamma_k(f)}
+\right|
+\le
+\frac{8\gamma_M}{\varepsilon}|\mathcal K|.
+]
+
+In conclusion, on ( \Omega_M(K) ), for all ( f\in B(f^*,\rho) ),
+[
+\sum_{k\in\mathcal K}
+\mathbb I(|g_f(W_k)|<\gamma_k(f))
+\ge
+(1-\alpha-x-8\gamma_M/\varepsilon)|\mathcal K|
+\ge
+K\gamma(1-\alpha-x-8\gamma_M/\varepsilon)
+\ge
+(1-\eta)K.
+\quad\blacksquare
+]
+
+---
+
+### 4.2 Bounding the empirical criterion ( C_{K,\lambda}(f^*) )
+
+Let us first introduce the event on which the statement of Theorem **1** holds.
+Denote by ( \Omega(K) ) the intersection of the events
+( \Omega_Q(K) ), ( \Omega_M(K) ) defined respectively in Lemmas **1** and **2**
+for
+[
+\rho \in {\kappa\rho_K : \kappa\in{1,2}}
+]
+and
+[
+\eta=\frac14,\quad
+\gamma=\frac78,\quad
+\alpha=\frac1{24},\quad
+x=\frac1{24},\quad
+\gamma_Q=\frac{1}{384\theta_0},\quad
+\varepsilon=\frac{1}{c\theta_0^2},\quad
+\gamma_M=\frac{\varepsilon}{192}.
+\tag{15}
+]
+
+for some absolute constant ( c>0 ) to be specified later.
+For these values, conditions in both Lemmas **1** and **2** are satisfied:
+[
+\gamma(1-\alpha-x-16\gamma_Q\theta_0)\ge 1-\eta=\frac34
+\quad\text{and}\quad
+\gamma(1-\alpha-x-8\gamma_M/\varepsilon)\ge 1-\eta=\frac34 .
+]
+
+According to Lemmas **1** and **2**, the event ( \Omega(K) ) satisfies
+[
+\mathbb P(\Omega(K)) \ge 1-4\exp(-7K/9216).
+]
+On ( \Omega(K) ), the following holds for all
+[
+\rho \in {\kappa\rho_K : \kappa\in{1,2}}
+]
+and ( f\in\mathcal F ) such that ( |f-f^*|\le\rho ):
+
+1. if ( |f-f^*|*{L_P^2} \ge r_Q(\rho,\gamma_Q) ) then
+   [
+   Q*{1/4,K}((f-f^*)^2)
+   \ge
+   \frac{1}{(4\theta_0)^2}|f-f^*|_{L_P^2}^2 ,
+   \tag{16}
+   ]
+
+2. there exist ( 3K/4 ) blocks ( B_k ) with ( k\in\mathcal K ), for which
+   [
+   \big|
+   (P_{B_k}-\overline P_{B_k})
+   [2\zeta(f-f^*)]
+   \big|
+   \le
+   \varepsilon
+   \max!\left(
+   r_M^2(\rho,\gamma_M),
+   \frac{384\theta_m^2}{\varepsilon^2}\frac{K}{N}|f-f^*|_{L_P^2}^2
+   \right).
+   \tag{17}
+   ]
+
+---
+
+Moreover, on the blocks ( B_k ) where **(17)** holds, it follows from assumption in **(8)** that all
+( f \in \mathcal F ) such that ( |f-f^*|\le \rho ) satisfies
+[
+P_{B_k}[2\zeta(f-f^*)]
+\le
+P[2\zeta(f-f^*)]
++
+2\varepsilon
+\max!\left(
+r_M^2(\rho,\gamma_M),
+\frac{384\theta_m^2}{\varepsilon^2}\frac{K}{N}|f-f^*|_{L_P^2}^2
+\right).
+]
+
+It follows from the convexity of ( \mathcal F ) and the nearest point theorem that
+( P[2\zeta(f-f^*)]\le 0 ) for all ( f\in\mathcal F ); therefore, for all
+( f\in\mathcal F ) such that ( |f-f^*|\le\rho ),
+[
+Q_{3/4,K}(2\zeta(f-f^*))
+\le
+2\varepsilon
+\max!\left(
+r_M^2(\rho,\gamma_M),
+\frac{384\theta_m^2}{\varepsilon^2}\frac{K}{N}|f-f^*|_{L_P^2}^2
+\right).
+\tag{18}
+]
+
+Moreover, still on the blocks ( B_k ) where **(17)** holds, one also has, thanks to assumption **(8)**, that for all
+( f\in\mathcal F ) such that ( |f-f^*|\le\rho ),
+[
+P[-2\zeta(f-f^*)]
+\le
+P_{B_k}[-2\zeta(f-f^*)]
++
+2\varepsilon
+\max!\left(
+r_M^2(\rho,\gamma_M),
+\frac{384\theta_m^2}{\varepsilon^2}\frac{K}{N}|f-f^*|_{L_P^2}^2
+\right).
+]
+
+It follows that, for all ( f\in\mathcal F ) such that ( |f-f^*|\le\rho ),
+[
+\begin{aligned}
+P[-2\zeta(f-f^*)]
+&\le
+Q_{1/4,K}[-2\zeta(f-f^*)]
++
+2\varepsilon
+\max!\left(
+r_M^2(\rho,\gamma_M),
+\frac{384\theta_m^2}{\varepsilon^2}\frac{K}{N}|f-f^*|*{L_P^2}^2
+\right)
+\
+&\le
+Q*{1/4,K}[(f-f^*)^2-2\zeta(f-f^*)]
++
+\lambda(|f|-|f^*|)
+\
+&\quad+
+2\varepsilon
+\max!\left(
+r_M^2(\rho,\gamma_M),
+\frac{384\theta_m^2}{\varepsilon^2}\frac{K}{N}|f-f^*|*{L_P^2}^2
+\right)
++\lambda\rho
+\
+&\le
+T*{K,\lambda}(f^*,f)
++
+2\varepsilon
+\max!\left(
+r_M^2(\rho,\gamma_M),
+\frac{384\theta_m^2}{\varepsilon^2}\frac{K}{N}|f-f^*|_{L_P^2}^2
+\right)
++\lambda\rho .
+\end{aligned}
+\tag{19}
+]
+
+The main result of this section is **Lemma 3**. It will be used to bound from above the criterion
+[
+C_{K,\lambda}(f^*)=\sup_{g\in\mathcal F}T_{K,\lambda}(g,f^*).
+]
+Recall that ( \rho_K ) and ( \lambda ) are defined as
+[
+r^2(\rho_K)=\frac{384\theta_m^2}{\varepsilon^2}\frac{K}{N}
+\quad\text{and}\quad
+\lambda=\frac{c'\varepsilon r^2(\rho_K)}{\rho_K}.
+\tag{20}
+]
+
+where ( \varepsilon=(c\theta_0^2)^{-1} ) and ( c,c' \ge 0 ) are absolute constants.
+We also need to consider a partition of the space ( \mathcal F ) according to the distance between ( g ) and ( f^* ) w.r.t. ( |\cdot| ) and ( |\cdot|_{L_P^2} ) as in Figure **2**: define for all ( \kappa\ge1 ),
+[
+\mathcal F_1^{(\kappa)}
+=======================
+
+{g\in\mathcal F:|g-f^*|\le\kappa\rho_K
+\text{ and }
+|g-f^*|_{L_P^2}\le r(\kappa\rho_K)},
+]
+[
+\mathcal F_2^{(\kappa)}
+=======================
+
+{g\in\mathcal F:|g-f^*|\le\kappa\rho_K
+\text{ and }
+|g-f^*|_{L_P^2}> r(\kappa\rho_K)},
+]
+[
+\mathcal F_3^{(\kappa)}
+=======================
+
+{g\in\mathcal F:|g-f^*|>\kappa\rho_K}.
+]
+
+---
+
+**Lemma 3.** *On the event ( \Omega(K) ), it holds for all ( \kappa\in{1,2} ),*
+[
+\sup_{g\in\mathcal F_1^{(\kappa)}}T_{K,\lambda}(g,f^*)
+\le
+(2+c'\kappa)\varepsilon r^2(\kappa\rho_K),
+]
+[
+\sup_{g\in\mathcal F_2^{(\kappa)}}T_{K,\lambda}(g,f^*)
+\le
+\left((2+c'\kappa)\varepsilon-\frac{1}{16\theta_0^2}\right)r^2(\kappa\rho_K),
+]
+and
+[
+\sup_{g\in\mathcal F_3^{(\kappa)}}T_{K,\lambda}(g,f^*)
+\le
+\kappa
+\max!\left(
+2\varepsilon-\frac{1}{16\theta_0^2}+\frac{11c'\varepsilon}{10},
+,2\varepsilon-\frac{7c'\varepsilon}{10}
+\right)
+r^2(\rho_K),
+]
+when ( c\ge32 ) and
+[
+10\varepsilon/4 \le c'\varepsilon \le (4\theta_0)^{-2}-2\varepsilon .
+]
+
+---
+
+**Proof of Lemma 3.** Recall that, for all ( g\in\mathcal F ),
+[
+\ell_{f^*}-\ell_g = 2\zeta(g-f^*)-(g-f^*)^2,
+\quad\text{where } \zeta(x,y)=y-f^*(x).
+]
+Let us now place ourselves on the event ( \Omega(K) ) up to the end of proof.
+
+---
+
+## **Transcribed text**
+
+**Figure 2:** Partition ( {F_1^{(\kappa)}, F_2^{(\kappa)}, F_3^{(\kappa)}} ) of ( \mathcal F ) and the control of the multiplier MOM process by either the quadratic MOM process (the “(Q > M)” part) or the regularization term (the “(R > M)” part).
+
+---
+
+### Bounding ( \sup_{g\in F_1^{(\kappa)}} T_{K,\lambda}(g,f^*) )
+
+Let ( g \in F_1^{(\kappa)} ). Since the quadratic process is non-negative,
+[
+T_{K,\lambda}(g,f^*)
+====================
+
+## \mathrm{MOM}_K!\big(2\zeta(g-f^*)-(g-f^*)^2\big)
+
+\lambda(|g|-|f^*|)
+\le
+Q_{3/4,K}(2\zeta(g-f^*))+\lambda|f^*-g|.
+]
+
+Therefore, applying **(18)** for ( \rho=\kappa\rho_K ) and the choice of ( \rho_K ) and ( \lambda ) as in **(20)**, we get
+[
+T_{K,\lambda}(g,f^*)
+\le
+2\varepsilon
+\max!\left(
+r_M^2(\kappa\rho_K,\gamma_M),
+\frac{384\theta_m^2}{\varepsilon^2}\frac{K}{N}|f-f^*|_{L_P^2}^2
+\right)
++
+\lambda\kappa\rho_K
+\le
+2\varepsilon r^2(\kappa\rho_K)+c'\kappa\varepsilon r^2(\rho_K)
+]
+[
+\le
+(2+c'\kappa)\varepsilon r^2(\kappa\rho_K).
+]
+
+---
+
+### Bounding ( \sup_{g\in F_2^{(\kappa)}} T_{K,\lambda}(g,f^*) )
+
+Let ( g \in F_2^{(\kappa)} ). Given that
+[
+Q_{1/2}(x-y)\le Q_{3/4}(x)-Q_{1/4}(y)
+\quad\text{for any vectors }x,y,
+]
+we have
+[
+\mathrm{MOM}*K!\big(2\zeta(g-f^*)-(g-f^*)^2\big)
++\lambda(|f^*|-|g|)
+\le
+Q*{3/4,K}(2\zeta(g-f^*))-Q_{1/4,K}((f^*-g)^2)
++\lambda\kappa\rho_K.
+]
+
+Moreover, ( 2\varepsilon\le(4\theta_0)^{-2} ) when ( c\ge32 ), so it follows from **(16)** and **(18)** for ( \rho=\kappa\rho_K ) that
+[
+Q_{3/4,K}(2\zeta(f^*-g)) - Q_{1/4,K}((f^*-g)^2)
+\le
+2\varepsilon
+\max!\left(
+r_M^2(\kappa\rho_K,\gamma_M),
+\frac{384\theta_m^2}{\varepsilon^2}\frac{K}{N}|f-f^*|_{L_P^2}^2
+\right)
+-------
+
+\frac{|f-f^*|_{L_P^2}^2}{(4\theta_0)^2}
+]
+[
+\le
+\left(2\varepsilon-\frac{1}{(4\theta_0)^2}\right)|f-f^*|_{L_P^2}^2
+\le
+\left(2\varepsilon-\frac{1}{16\theta_0^2}\right)r^2(\kappa\rho_K).
+]
+
+Putting both inequalities together and using that
+[
+\lambda\kappa\rho_K=c'\kappa\varepsilon r^2(\rho_K),
+]
+we get
+[
+T_{K,\lambda}(g,f^*)
+\le
+\left((2+c'\kappa)\varepsilon-\frac{1}{16\theta_0^2}\right)
+r^2(\kappa\rho_K).
+]
+
+---
+
+### Bounding ( \sup_{g\in F_3^{(\kappa)}} T_{K,\lambda}(g,f^*) ) via a homogeneity argument
+
+Start with two lemmas.
+
+**Lemma 4.** Let ( \rho\ge0 ),
+[
+\Gamma_{f^*}(\rho)
+==================
+
+\bigcup_{f\in f^*+(\rho/20)B(\partial|\cdot|)} f
+\quad\text{(cf. Section 3.3).}
+]
+For all ( g\in\mathcal F ),
+[
+|g|-|f^*|
+\ge
+\sup_{z^*\in\Gamma_{f^*}(\rho)} z^*(g-f^*)
+-\frac{\rho}{10}.
+]
+
+---
+
+## **Explanation of the chart (Figure 2)**
+
+The figure is a **geometric interpretation of how the function class ( \mathcal F ) is partitioned and controlled** when analyzing the MOM (Median-of-Means) estimator.
+
+### 1. Center point
+
+* The black dot at the center is **( f^* )**, the oracle (true risk minimizer).
+
+### 2. Radial partition (three regions)
+
+The space around ( f^* ) is divided into **three concentric regions**, indexed by ( \kappa ):
+
+#### **( F_1^{(\kappa)} ) – inner region**
+
+* Close to ( f^* ) **both** in norm ( |\cdot| ) and in ( L_P^2 ).
+* Here, deviations are small.
+* **Control mechanism:** the **multiplier term** is dominated, and the **regularization + quadratic MOM** give tight bounds.
+* This is the **safe region**.
+
+#### **( F_2^{(\kappa)} ) – intermediate ring**
+
+* Close in norm ( |\cdot| ), but **large in ( L_P^2 )**.
+* This means predictions differ significantly in squared loss.
+* **Control mechanism:** the **quadratic MOM term dominates** (labeled in blue as “( Q > M )”).
+* This region forces negative drift via the quadratic term.
+
+#### **( F_3^{(\kappa)} ) – outer region**
+
+* Far from ( f^* ) in norm ( |\cdot| ).
+* **Control mechanism:** the **regularization term dominates** (labeled in red as “( R > M )”).
+* Homogeneity ensures the penalty grows linearly with distance.
+
+### 3. Colored sectors
+
+* **Blue regions (“Q > M”)**
+  Quadratic term dominates → strong curvature → pushes estimator back toward ( f^* ).
+* **Red regions (“R > M”)**
+  Regularization dominates → norm penalty prevents runaway solutions.
+* **Green boundary zones**
+  Transition areas where both effects balance.
+
+### 4. Meaning of the dashed rays
+
+* These represent directions in function space.
+* The analysis is **uniform in all directions**, not just one.
+
+### 5. Why this partition matters
+
+The proof of Lemma 3 shows that **in every possible region**, the criterion
+( T_{K,\lambda}(g,f^*) ) is **uniformly upper-bounded**:
+
+* Near ( f^* ): small stochastic fluctuations
+* Mid-range: quadratic loss enforces contraction
+* Far away: regularization enforces contraction
+
+This guarantees that the MOM estimator **cannot escape far from ( f^* )**.
+
+---
+
+**Proof.** Let ( g \in F ), ( f^{**} \in f^* + (\rho/20)B ) and ( z^* \in (\partial |\cdot|)_{f^{**}} ). We have
+[
+|g| - |f^*| \ge |g| - |f^{**}| - |f^{**} - f^*|
+\ge z^*(g - f^{**}) - \frac{\rho}{20}
+= z^*(g - f^*) - z^*(f^{**} - f^*) - \frac{\rho}{20}
+\ge z^*(g - f^*) - \frac{\rho}{10},
+]
+where the last inequality follows from ( z^*(f^{**} - f^*) \le |f^{**} - f^*| ). The result follows by taking supremum over ( z^* \in \Gamma_{f^*}(\rho) ). (\blacksquare)
+
+---
+
+**Lemma 5.** Let ( \rho \ge 0 ). Let ( g \in F ) be such that ( |g - f^*| \ge \rho ). Define
+[
+f = f^* + \rho \frac{(g - f^*)}{|g - f^*|}.
+]
+Then ( f \in F ), ( |f - f^*| = \rho ) and
+[
+\operatorname{MOM}_K!\big((g - f^*)^2 - 2\zeta(g - f^*)\big)
+
+* \lambda \sup_{z^* \in \Gamma_{f^*}(\rho)} z^*(g - f^*)
+  ]
+  [
+  \ge
+  \frac{|g - f^*|_{L_P^2}}{\rho}
+  \left(
+  \operatorname{MOM}_K!\big((f - f^*)^2 - 2\zeta(f - f^*)\big)
+* \lambda \sup_{z^* \in \Gamma_{f^*}(\rho)} z^*(f - f^*)
+  \right).
+  ]
+
+**Proof.** The first conclusion holds by convexity of ( F ), the second statement is obvious. For the last one, let
+[
+\Upsilon = \frac{|g - f^*|}{\rho}
+]
+and note that ( \Upsilon \ge 1 ) and ( g - f^* = \Upsilon (f - f^*) ), so we have
+[
+\operatorname{MOM}_K!\big((g - f^*)^2 - 2\zeta(g - f^*)\big)
+
+* \lambda \sup_{z^* \in \Gamma_{f^*}(\rho)} z^*(g - f^*)
+  ]
+  [
+  = \operatorname{MOM}_K!\big(\Upsilon^2 (f - f^*)^2 - 2\Upsilon \zeta(f - f^*)\big)
+* \lambda \Upsilon \sup_{z^* \in \Gamma_{f^*}(\rho)} z^*(f - f^*)
+  ]
+  [
+  \ge \Upsilon
+  \left(
+  \operatorname{MOM}_K!\big((f - f^*)^2 - 2\zeta(f - f^*)\big)
+* \lambda \sup_{z^* \in \Gamma_{f^*}(\rho)} z^*(f - f^*)
+  \right).
+  \quad \blacksquare
+  ]
+
+---
+
+Now, let us bound ( \sup_{g \in F_3^{(K)}} T_{K,\lambda}(g,f^*) ).
+Let ( g \in F_3^{(K)} ). Apply Lemma 4 and Lemma 5 to ( \rho = \rho_K ): there exists ( f \in F ) such that
+( |f - f^*| = \rho_K ) and
+[
+T_{K,\lambda}(g,f^*)
+= \operatorname{MOM}_K!\big(2\zeta(g - f^*) - (g - f^*)^2\big)
+
+* \lambda(|g| - |f^*|)
+  ]
+  [
+  \le \operatorname{MOM}_K!\big(2\zeta(g - f^*) - (g - f^*)^2\big)
+* \lambda \sup_{z^* \in \Gamma_{f^*}(\rho_K)} z^*(g - f^*)
+
+- \lambda \frac{K \rho_K}{10}
+  ]
+  [
+  \le
+  \frac{|g - f^*|}{\rho_K}
+  \left(
+  \operatorname{MOM}_K!\big(2\zeta(f - f^*) - (f - f^*)^2\big)
+
+* \lambda \sup_{z^* \in \Gamma_{f^*}(\rho_K)} z^*(f - f^*)
+  \right)
+
+- \lambda \frac{K \rho_K}{10}.
+  \tag{21}
+  ]
+
+First assume that ( |f - f^*|_{L_P^2} \le r(\rho_K) ).
+In that case, ( |f - f^*| = \rho_K ) and ( |f - f^*|*{L_P^2} \le r(\rho_K) ), therefore ( f \in H*{\rho_K} ).
+Moreover, by definition of ( K^* ) and since ( K \ge K^* ), we have ( \rho_K \ge \rho^* ), which implies that ( \rho_K ) satisfies the sparsity equation from Definition 6.
+Therefore,
+[
+\sup_{z^* \in \Gamma_{f^*}(\rho_K)} z^*(f - f^*) \ge \Delta(\rho_K) \ge \frac{4\rho_K}{5}.
+]
+Now, it follows from the definition of ( \lambda ) in (20) that
+[
+
+* \lambda \sup_{z^* \in \Gamma_{f^*}(\rho_K)} z^*(f - f^*)
+  \le - \frac{4 c' e r^2(\rho_K)}{5}.
+  ]
+
+Moreover, since the quadratic process is non-negative, by (18) applied to ( \rho = \rho_K ),
+[
+\operatorname{MOM}*K!\big(2\zeta(f - f^*) - (f - f^*)^2\big)
+\le Q*{3/4,K}!\big[2\zeta(f - f^*)\big]
+]
+[
+\le 2e \max!\left(
+r_M^2(\rho_K,\gamma_M),
+\frac{384\theta_m^2 K}{\varepsilon^2 N},|f - f^*|_{L_P^2}^2
+\right)
+\le 2e r^2(\rho_K).
+]
+
+---
+
+Finally, noting that ( 2e - 4c'e/5 \le 0 ) when ( c' \ge 10/4 ), binding all the pieces together in (21) yields
+[
+T_{K,\lambda}(g,f^*) \le \kappa e (2 - 4c'/5) r^2(\rho_K) + \lambda \frac{\kappa \rho_K}{10}
+= \kappa e \left( 2 - \frac{7c'}{10} \right) r^2(\rho_K).
+]
+
+Second, assume that ( |f - f^*|_{L_P^2} > r(\rho_K) ). Since ( |f - f^*| = \rho_K ), it follows from (16) and (17) for ( \rho = \rho_K ) that
+[
+\operatorname{MOM}*K!\big(2\zeta(f - f^*) - (f - f^*)^2\big)
+\le Q*{3/4,K}!\big(2\zeta(f - f^*)\big) - Q_{1/4,K}!\big((f^* - f)^2\big)
+]
+[
+\le 2e \max!\left(
+r_M^2(\rho_K,\gamma_M),
+\frac{384\theta_m^2 K}{\varepsilon^2 N},|f - f^*|_{L_P^2}^2
+\right)
+
+* \frac{|f - f^*|_{L_P^2}^2}{(4\theta_0)^2}
+  ]
+  [
+  \le \left( 2e - \frac{1}{16\theta_0^2} \right)|f - f^*|*{L_P^2}^2
+  \le \left( 2e - \frac{1}{16\theta_0^2} \right) r^2(\rho_K),
+  ]
+  where we used that ( 2e \le (16\theta_0)^{-2} ) when ( c \ge 32 ) in the last inequality.
+  Plugging the last result in (21) we get
+  [
+  T*{K,\lambda}(g,f^*) \le
+  \frac{|g - f^*|}{\rho_K}
+  \left(
+  \left( 2e - \frac{1}{16\theta_0^2} \right) r^2(\rho_K) + \lambda \rho_K
+  \right)
+
+- \lambda \frac{\kappa \rho_K}{10}
+  ]
+  [
+  \le
+  \frac{|g - f^*|}{\rho_K}
+  \left(
+  (2 + c')e - \frac{1}{16\theta_0^2}
+  \right) r^2(\rho_K)
+- \frac{c'\kappa e}{10} r^2(\rho_K)
+  \le
+  \kappa
+  \left(
+  \left( 2 + \frac{11c'}{10} \right)e - \frac{1}{16\theta_0^2}
+  \right)
+  r^2(\rho_K),
+  ]
+  when ( 16(2 + c')e \le \theta_0^{-2} ).
+
+---
+
+### 4.3 From a control of ( C_{K,\lambda}(\hat f) ) to statistical performance
+
+The proof follows essentially the one of [56, Theorem 3.2] or [50, Lemma 2].
+
+**Lemma 6.**
+Let ( \hat f \in F ) be such that, on ( \Omega(K) ),
+[
+C_{K,\lambda}(\hat f) \le (2 + c') e r^2(\rho_K).
+]
+Then, on ( \Omega(K) ), ( \hat f ) satisfies
+[
+|\hat f - f^*| \le 2\rho_K,
+\qquad
+|\hat f - f^*|_{L_P^2} \le r(2\rho_K),
+]
+and
+[
+R(\hat f) \le R(f^*) + (1 + (4 + 3c')e), r^2(2\rho_K),
+]
+when ( c' = 16 ) and ( c > 832 ).
+
+**Proof.** Recall that for any ( x \in \mathbb{R}^K ),
+[
+Q_{1/2}(x) \ge -Q_{1/2}(-x).
+]
+Therefore,
+[
+C_{K,\lambda}(\hat f)
+= \sup_{g \in F} T_{K,\lambda}(g,\hat f)
+\ge T_{K,\lambda}(f^*,\hat f)
+\ge -T_{K,\lambda}(\hat f,f^*).
+]
+
+Thus, on ( \Omega(K) ),
+[
+\hat f \in { g \in F : T_{K,\lambda}(g,f^*) \ge -(2 + c') e r^2(\rho_K) }.
+]
+When ( c' = 16 ) and ( c > 832 ),
+[
+-(2 + c')e > 2(1 + c')e - \frac{1}{16\theta_0^2}
+\quad \text{and} \quad
+-(2 + c')e >
+2 \max!\left(
+2e - \frac{1}{16\theta_0^2} + \frac{11c'e}{10},
+, 2e - \frac{7c'e}{10}
+\right),
+]
+therefore, ( \hat f \in F_1^{(2)} ) on ( \Omega(K) ).
+This yields the results for both the regularization and the ( L_P^2 )-norm.
+
+Finally, let us turn to the control on the excess risk.
+It follows from (19) for ( \rho = \kappa \rho_K ) that
+[
+R(\hat f) - R(f^*)
+= |\hat f - f^*|*{L_P^2}^2 + P[-2\zeta(\hat f - f^*)]
+]
+[
+\le r^2(2\rho_K) + T*{K,\lambda}(f^*,\hat f)
+
+* 2e \max!\left(
+  r_M^2(2\rho_K,\gamma_M),
+  \frac{384\theta_m^2 K}{\varepsilon^2 N},|\hat f - f^*|_{L_P^2}^2
+  \right)
+* 2\lambda \rho_K
+  ]
+  [
+  \le r^2(2\rho_K) + C_{K,\lambda}(\hat f)
+* 2e r^2(2\rho_K) + 2c' e r^2(\rho_K)
+  = (1 + (4 + 3c')e), r^2(2\rho_K).
+  \quad \blacksquare
+  ]
+
+---
+
+### 4.4 End of the proof of Theorem 1
+
+By definition of ( \hat f_{K,\lambda} ),
+[
+C_{K,\lambda}(\hat f_{K,\lambda})
+\le C_{K,\lambda}(f^*)
+= \sup_{g \in F} T_{K,\lambda}(g,f^*)
+\le \max_{i \in [3]} \sup_{g \in F_i^{(1)}} T_{K,\lambda}(g,f^*),
+]
+where ( {F_1^{(1)}, F_2^{(1)}, F_3^{(1)}} ) is the decomposition of ( F ) as in Figure 2.
+It follows from Lemma 3 (for ( \kappa = 1 )) that on the event ( \Omega(K) ),
+[
+C_{K,\lambda}(\hat f_{K,\lambda}) \le (2 + c') e r^2(\rho_K).
+]
+
+Therefore, for ( c' = 16 ) and ( c = 833 ) the conclusion of the proof of Theorem 1 follows from Lemma 6.
+
+---
+
+### 4.5 Proof of Theorem 2
+
+Define
+[
+K_1 = \frac{|O|}{1 - \gamma} = 8|O|
+\quad \text{and} \quad
+K_2 = \frac{N\alpha}{(2\theta_0\theta_{r_0})^2}
+= \frac{N}{96(\theta_0\theta_{r_0})^2}.
+]
+
+Let ( K \in [K_1, K_2] ) and let
+[
+\Omega_{K,c_{ad}} = { f^* \in \bigcap_{j=K}^{K_2} \hat R_{j,c_{ad}} },
+]
+where we recall that
+[
+\hat R_{j,c_{ad}} = { f \in F : C_{j,\lambda}(f) \le (c_{ad}/\theta_0^2) r^2(\rho_j) }.
+]
+Lemma 3 (for ( \kappa = 1 )) shows that, for ( c_{ad} = (2 + c')/c ),
+[
+\Omega_{K,c_{ad}} \supset \bigcap_{j=K}^{K_2} \Omega(j).
+]
+Therefore, on ( \bigcap_{j=K}^{K_2} \Omega(j) ), ( \hat K_{c_{ad}} \le K ) which implies that
+( \hat f_{c_{ad}} \in \hat R_{K,c_{ad}} ).
+By Lemma 6 (for ( c' = 16 ) and ( c = 833 )), this implies that
+[
+|\hat f_{c_{ad}} - f^*| \le 2\rho_K,
+\qquad
+|\hat f_{c_{ad}} - f^*|*{L_P^2} \le r(2\rho_K),
+]
+and
+[
+R(\hat f*{c_{ad}}) \le R(f^*) + (1 + (4 + 3c')e) r^2(2\rho_K).
+]
+
+---
+
+## A Simulation study
+
+The aim of this section is to show that the min-max procedure introduced in this work can be computed using alternating descent-ascent algorithms.
+It appears that all the following algorithms can be recast as **block gradient descent (BGD)** but the major difference with the classical BGD is that blocks are chosen according to their “centrality” via the median operator instead of iterating over all the blocks (resp. at random) in the classical (resp. stochastic) BGD approach.
+
+We test our algorithms in a high-dimensional framework.
+In this setup, the ( \ell_1 )-norm has played a prominent role through the LASSO estimator.
+There has been a huge number of algorithms designed to implement the LASSO.
+The aim of this section is to show that there is a natural equivalent formulation to all these algorithms for the MOM-LASSO that makes them more robust to outliers as can be appreciated in Figure 1.
+The choice of hyper-parameters like the number of blocks or the regularization parameter cannot be done via classical Cross-Validation approaches because of the potential presence of outliers in the test sets; CV procedures are adapted using MOM estimators.
+We also advocate for using random blocks at every iterations of the algorithms.
+This bypasses a problem of “local saddle points” we have identified.
+A by product of the latter approach is a definition of depth adapted to the learning task and therefore of an outliers detection algorithm.
+
+---
+
+### A.1 Data generating process and corruption by outliers
+
+We study the performance of all the algorithms on a dataset corrupted by outliers of various forms.
+The “basic” set of “informative data” is called ( D_1 ).
+This set is corrupted by various datasets of outliers, named ( D_2, D_3, D_4 ) and ( D_5 ).
+Good and bad data have been merged and shuffled in the dataset
+[
+D = D_1 \cup D_2 \cup D_3 \cup D_4
+]
+given to the statistician.
+Let us now detail the construction of these datasets.
+
+---
+
+1. The set ( D_1 ) of “informative data” is a set of ( N_{\text{good}} ) i.i.d. data ( (X_i, Y_i) ) with common distribution
+   [
+   Y = \langle X, t^* \rangle + \zeta,
+   \tag{22}
+   ]
+   where ( t^* \in \mathbb{R}^d ), ( X \sim \mathcal{N}(0, I_{d \times d}) ) and ( \zeta \sim \mathcal{N}(0, \sigma^2) ) is independent of ( X ).
+
+2. ( D_2 ) is a dataset of ( N_{\text{bad}-1} ) “bad data” ( (X_i, Y_i) ) such that ( Y_i = 1 ) and ( X_i = (1)_{j=1}^d ).
+
+3. ( D_3 ) is a dataset of ( N_{\text{bad}-2} ) “bad data” ( (X_i, Y_i) ) such that ( Y_i = 10000 ) and ( X_i = (1)_{j=1}^d ).
+
+4. ( D_4 ) is a dataset of ( N_{\text{bad}-3} ) “bad data” ( (X_i, Y_i) ) where ( Y_i ) is a 0–1 Bernoulli random variable and ( X_i ) is uniformly distributed over ( [0,1]^d ).
+
+5. ( D_5 ) is also a set of “outliers” that have been generated according to a linear model as in (22) (i.e. with the same target vector ( t^* )) but for a different choice of design ( X ) and noise ( \zeta ).
+   Here, we take ( X \sim \mathcal{N}(0, \Sigma) ) where
+   [
+   \Sigma = (\rho^{|i-j|})_{1 \le i,j \le d}
+   ]
+   and ( \zeta ) is a heavy-tailed noise distributed according to a Student distribution with various degrees of freedom.
+
+These different types of “outliers” ( D_j ), ( j = 2,3,4,5 ) have been chosen to illustrate that the theory allows for outliers that may have absolutely nothing to do with the oracle ( t^* ) that can be neither independent nor random as illustrated by datasets ( D_2 ) and ( D_3 ).
+
+---
+
+### A.2 From algorithms for the LASSO to their “MOM versions”
+
+There is a huge literature presenting many algorithms to implement the LASSO procedure.
+We explore several of them to investigate their performance regarding robustness.
+
+Each algorithm designed for the LASSO can be transformed into an algorithm for the min-max estimator we have been studying in this work.
+Let us now explain how this can be done.
+Recall that the MOM version of the LASSO estimator is
+[
+\hat t_{K,\lambda} \in \arg\min_{t \in \mathbb{R}^d} \sup_{t' \in \mathbb{R}^d} T_{K,\lambda}(t',t),
+\tag{23}
+]
+where
+[
+T_{K,\lambda}(t',t)
+= \operatorname{MOM}*K(\ell_t - \ell*{t'})
+
+* \lambda(|t|*1 - |t'|*1),
+  ]
+  (\operatorname{MOM}*K(\ell_t - \ell*{t'})) is a median of the set of real numbers
+  [
+  { P*{B_1}(\ell_t - \ell*{t'}), \ldots, P_{B_K}(\ell_t - \ell_{t'}) },
+  ]
+  and for all ( k \in [K] ),
+  [
+  P_{B_k}(\ell_t - \ell_{t'})
+  = \frac{1}{|B_k|} \sum_{i \in B_k}
+  \Big( (Y_i - \langle X_i, t \rangle)^2
+
+- (Y_i - \langle X_i, t' \rangle)^2 \Big).
+  ]
+
+A natural idea to implement (23) is to consider algorithms based on a sequence of alternating descents (in ( t )) and ascents (in ( t' )) steps with or without a “proximal/projection” step and for various choices of “step sizes”.
+A key issue here is that the “marginal” functions ( t \mapsto T_{K,\lambda}(t_0',t) ) and ( t' \mapsto T_{K,\lambda}(t',t_0) ), for some given ( (t_0,t_0') ), may not be convex.
+Nevertheless, one can still locally compute one steepest descent by assuming that the index in ( [K] ) of the block achieving the median in
+( \operatorname{MOM}*K(\ell*{t_0} - \ell_{t_0'}) )
+remains constant on a convex open set containing ( (t_0,t_0') ).
+
+---
+
+**Assumption 4.**
+Almost surely (with respect to ( (X_i,Y_i)*{i=1}^N )) for almost all ( (t_0,t_0') \in \mathbb{R}^d \times \mathbb{R}^d ) (with respect to the Lebesgue measure on ( \mathbb{R}^d \times \mathbb{R}^d )), there exists a convex open set ( B ) containing ( (t_0,t_0') ) and ( k \in [K] ) such that for all ( (t,t') \in B ),
+[
+P*{B_k}(\ell_t - \ell_{t'}) \in \operatorname{MOM}*K(\ell_t - \ell*{t'}).
+]
+
+Under Assumption 4, for ( \lambda \otimes \lambda )-almost all couples ( (t_0,t_0') \in \mathbb{R}^d \times \mathbb{R}^d ) (where ( \lambda ) is the Lebesgue measure on ( \mathbb{R}^d )),
+( t \mapsto T_{K,\lambda}(t_0',t) ) is “locally strictly convex” and
+( t' \mapsto T_{K,\lambda}(t',t_0) ) is “locally strictly concave”.
+Therefore, for the choice of index ( k ) such that
+[
+P_{B_k}(\ell_{t_0} - \ell_{t_0'}) \in \operatorname{MOM}*K(\ell*{t_0} - \ell_{t_0'}),
+]
+we have
+[
+\nabla_t \operatorname{MOM}*K(\ell_t - \ell*{t_0'})\big|*{t=t_0}
+= -2 (X^{(k)})^\top (Y^{(k)} - X^{(k)} t_0),
+\tag{24}
+]
+where ( Y^{(k)} = (Y_i)*{i \in B_k} ) and ( X^{(k)} ) is the ( |B_k| \times d ) matrix with rows given by ( X_i^\top ) for ( i \in B_k ).
+The integer ( k \in [K] ) is the index of the median of the ( K ) real numbers
+[
+P_{B_1}(\ell_t - \ell_{t'}), \ldots, P_{B_K}(\ell_t - \ell_{t'}),
+]
+which is straightforward to compute.
+The gradient ( -2 (X^{(k)})^\top (Y^{(k)} - X^{(k)} t_0) ) in (24) depends on ( t_0 ) only through the index ( k ).
+
+---
+
+**Remark 4 (Block Gradient Descent and map-reduce).**
+Algorithms developed for the minmax estimator can be interpreted as block gradient descent. The major difference with the classical Block Gradient descent (which takes sequentially all the blocks one after another), is that the index of the block is chosen here at each round according to a “centrality measure”: the index ( k \in [K] ) of the block ( B_k ) chosen to make one more descent / ascent step satisfies
+[
+P_{B_k}(\ell_{t_0} - \ell_{t_0'}) \in \operatorname{MOM}*K(\ell*{t_0} - \ell_{t_0'}).
+]
+In particular, we expect blocks corrupted by outliers not to be chosen whereas in the classical BGD all blocks are chosen at each pass. Moreover, by choosing the “descent / ascent” block ( k ) using this centrality measure we also expect ( P_{B_k}(\ell_{t_0} - \ell_{t_0'}) ) to be close to the true expectation ( P(\ell_{t_0} - \ell_{t_0'}) ) which is ultimately the function we would like to know. This makes every descent (resp. ascent) steps particularly efficient since the right descent (resp. ascent) direction is
+[
+-\nabla_t P(\ell_t - \ell_{t_0'})\big|*{t=t_0}
+\quad \text{(resp. } \nabla*{t'} P(\ell_{t_0} - \ell_{t'})\big|_{t'=t_0'}\text{)}.
+]
+
+Moreover, our algorithms particularly fits the “big data” framework which is our original motivation for the introduction of robust procedures in machine learning. In this framework, the map-reduce paradigm has emerged as a leading idea to design procedures. In this situation, the data are spread out in a cluster of servers and are therefore naturally split into blocks. Then our procedures simply uses for mapper a mean function and for reducer a median function. This makes our algorithms easily scalable into the big data framework even when some servers have crashed down (making outliers data). MOM algorithm could therefore reduced the maintenance of big clusters.
+
+---
+
+**Remark 5 (Normalization).**
+In the classical i.i.d. setup, the design matrix ( X ) (i.e., the ( N \times d ) matrix with row vectors ( X_1, \ldots, X_N )) is usually normalized so that the ( \ell_2^N )-norms of the columns equal to one. In our corrupted setup, we cannot normalize the design matrix this way because one row of ( X ) may be corrupted. In that case, normalizing each column of ( X ) would corrupt the entire matrix ( X ). ( X ) has to be kept as it is in all simulations.
+
+In the sequel, we use this strategy to transform several algorithms implemented for the LASSO into algorithms for the min-max estimator (23). We first start with the subgradient descent algorithm.
+
+---
+
+### A.3 Subgradient descent algorithm
+
+The LASSO is solution of the minimization problem
+[
+\min_{t \in \mathbb{R}^d} F(t)
+]
+where ( F ) is defined for all ( t \in \mathbb{R}^d ) by
+[
+F(t) = |Y - Xt|_2^2 + \lambda |t|*1
+]
+with ( Y = (Y_i)*{i=1}^N ) and ( X ) is the ( N \times d ) matrix with row vectors ( X_1, \ldots, X_N ).
+The LASSO can be approximated using a subgradient descent procedure: given a starting point ( t_0 \in \mathbb{R}^d ) and ( (\gamma_p)_p ) a sequence of step sizes (i.e. ( \gamma_p > 0 ) and ( (\gamma_p)*p ) decreases), at step ( p ) we update
+[
+t*{p+1} = t_p - \gamma_p \partial F(t_p).
+\tag{25}
+]
+
+where ( \partial F(t_p) ) is a subgradient of ( F ) at ( t_p ), for instance,
+[
+\partial F(t_p) = -2X^\top(Y - Xt_p) + \lambda,\mathrm{sign}(t_p),
+]
+where ( \mathrm{sign}(t_p) ) is the vector of signs of the coordinates of ( t_p ) with the convention ( \mathrm{sign}(0) = 0 ).
+The sub-gradient descent algorithm (25) can be turned into an alternating subgradient ascent/descent algorithm for the min-max estimator
+[
+\hat t_{K,\lambda} \in \arg\min_{t \in \mathbb{R}^d} \sup_{t' \in \mathbb{R}^d}
+\left( \operatorname{MOM}*K(\ell_t - \ell*{t'}) + \lambda(|t|_1 - |t'|_1) \right).
+]
+
+Let
+[
+Y_k = (Y_i)*{i \in B_k}
+\quad \text{and} \quad
+X_k = (X_i^\top)*{i \in B_k} \in \mathbb{R}^{|B_k| \times d}.
+\tag{26}
+]
+
+---
+
+**input** : ( (t_0,t_0') \in \mathbb{R}^d \times \mathbb{R}^d ) : initial point
+(\varepsilon > 0) : a stopping criteria
+((\eta_p)_p, (\beta_p)_p) : two step size sequences
+
+**output** : approximated solution to the min-max problem (23)
+
+1. **while** ( |t_{p+1} - t_p|*2 \ge \varepsilon ) **or** ( |t'*{p+1} - t'_p|_2 \ge \varepsilon ) **do**
+2.   find ( k \in [K] ) such that
+   [
+   \operatorname{MOM}*K(\ell*{t'*p} - \ell*{t_p}) = P_{B_k}(\ell_{t_p} - \ell_{t'_p})
+   ]
+3.   [
+   t_{p+1} = t_p + 2\eta_p X_k^\top (Y_k - X_k t_p) - \lambda \eta_p \operatorname{sign}(t_p)
+   ]
+4.   find ( k \in [K] ) such that
+   [
+   \operatorname{MOM}*K(\ell*{t'*p} - \ell*{t_{p+1}}) = P_{B_k}(\ell_{t_{p+1}} - \ell_{t'_p})
+   ]
+5.   [
+   t'_{p+1} = t'_p + 2\beta_p X_k^\top (Y_k - X_k t'_p) - \lambda \beta_p \operatorname{sign}(t'_p)
+   ]
+6. **end**
+7. **Return** ( (t_p,t'_p) )
+
+**Algorithm 1:** An alternating sub-gradient descent algorithm for the minmax MOM estimator (23).
+
+---
+
+The key insight in Algorithm 1 are step 2 and step 4 where the blocks number have been chosen according to their centrality among the other blocks via the median operator. Those steps are expected
+
+1. to remove outliers from the descent / ascent directions
+2. to improve the accuracy of the latter directions.
+
+A classical choice of step size ( \gamma_p ) in (25) is ( \gamma_p = 1/L ) where
+( L = |X|*{\ell_2 \to \ell_2}^2 ) ( ( |X|*{\ell_2 \to \ell_2} ) is the operator norm of ( X ) ).
+
+Another possible choice follows from the Armijo–Goldstein condition with the following backtracking line search: ( \gamma ) is decreased geometrically while the Armijo–Goldstein condition is not satisfied
+[
+\textbf{while } F(t_p + \gamma \partial F(t_p)) > F(t_p) + \delta \gamma |\partial F(t_p)|*2^2
+\quad \textbf{do } \gamma*{\ell+1} = \rho \gamma_\ell
+\tag{27}
+]
+for some given ( \rho \in (0,1) ), ( \delta = 10^{-4} ) and initial point ( \gamma_0 = 1 ).
+
+Of course, the same choice of step size can be made as well for ( (\eta_p)*p ) and ( (\beta_p)*p ) in Algorithm 1.
+In the first case, one can take
+[
+\eta_p = \frac{1}{|X_k|*{\ell_2 \to \ell_2}^2}
+\quad \text{where } k \in [K] \text{ is the index defined in line 2 of Algorithm 1}
+]
+and
+[
+\beta_p = \frac{1}{|X_k|*{\ell_2 \to \ell_2}^2}
+\quad \text{where } k \in [K] \text{ is the index defined in line 4 of Algorithm 1}.
+]
+
+In the other backtracking line search case, the Armijo–Goldstein condition adapted for Algorithm 1 reads like
+[
+\textbf{while } F_k(t_p + \gamma \partial F_k(t_p)) > F_k(t_p) + \delta \gamma |\partial F_k(t_p)|*2^2
+\quad \textbf{do } \gamma*{\ell+1} = \rho \gamma_\ell
+\tag{28}
+]
+where
+[
+F_k(t) = |Y_k - X_k t|_2^2 + \lambda |t|_1,
+]
+where ( k \in [K] ) is the index defined in line 2 of Algorithm 1 and a similar update follows for ( \beta_p ) with an index ( k \in [K] ) as defined in line 4 of Algorithm 1.
+
+---
+
+### A.4 Proximal gradient descent algorithms
+
+In this section, we provide a MOM version of the classical ISTA and FISTA algorithms. Recall that ISTA (and its accelerated version FISTA) are proximal gradient descent that fall in the general class of splitting algorithms where one usually decomposes the objective function
+[
+F(t) = f(t) + g(t)
+]
+with
+[
+f(t) = |Y - Xt|_2^2 \quad \text{(convex and differentiable)}
+]
+and
+[
+g(t) = \lambda |t|_1 \quad \text{(convex)}.
+]
+
+ISTA stands for **Iterative Shrinkage-Thresholding Algorithm**.
+It is a splitting algorithm that alternates between a descent step in the direction of the gradient and a “projection step” through the proximal operator of ( g ), which is the soft-thresholding operator in the case of the ( \ell_1 )-norm: at step ( p ),
+[
+t_{p+1} = \operatorname{prox}_{\lambda |\cdot|_1}
+\left( t_p + 2\gamma_p X^\top (Y - X t_p) \right).
+\tag{29}
+]
+
+where
+[
+\operatorname{prox}*{\lambda |\cdot|*1}(t)
+= (\operatorname{sign}(t_j)\max(|t_j| - \lambda, 0))*{j=1}^d
+\quad \text{for all } t = (t_j)*{j=1}^d \in \mathbb{R}^d.
+]
+
+A natural candidate for (23) is given by the following alternating method.
+
+---
+
+**input** : ( (t_0,t_0') \in \mathbb{R}^d \times \mathbb{R}^d ) : initial point
+(\varepsilon > 0) : a stopping criteria
+((\eta_k)_k, (\beta_k)_k) : two step size sequences
+
+**output** : approximated solution to the min-max problem (23)
+
+1. **while** ( |t_{p+1} - t_p|*2 \ge \varepsilon ) **or** ( |t'*{p+1} - t'_p|_2 \ge \varepsilon ) **do**
+2.   find ( k \in [K] ) such that
+   [
+   \operatorname{MOM}*K(\ell*{t'*p} - \ell*{t_p}) = P_{B_k}(\ell_{t_p} - \ell_{t'*p})
+   ]
+   [
+   t*{p+1} = \operatorname{prox}_{\lambda |\cdot|_1}
+   \left( t_p + 2\eta_k X_k^\top (Y_k - X_k t_p) \right)
+   ]
+3.   find ( k \in [K] ) such that
+   [
+   \operatorname{MOM}*K(\ell*{t'*p} - \ell*{t_{p+1}}) = P_{B_k}(\ell_{t_{p+1}} - \ell_{t'*p})
+   ]
+   [
+   t'*{p+1} = \operatorname{prox}_{\lambda |\cdot|_1}
+   \left( t'_p + 2\beta_k X_k^\top (Y_k - X_k t'_p) \right)
+   ]
+4. **end**
+5. **Return** ( (t_p,t'_p) )
+
+**Algorithm 2:** An alternating proximal gradient descent for the minimaximization procedure (23).
+
+---
+
+Note that the step sizes sequences ( (\eta_p)_p ) and ( (\beta_p)_p ) may be chosen according to the remarks below Algorithm 1.
+
+---
+
+### A.5 Douglas–Rachford / ADMM
+
+In this section, we consider the ADMM algorithm. ADMM stands for **Alternating Direction Method of Multipliers**. It is also a splitting algorithm which reads as follows in the LASSO case: at step ( p ),
+[
+t_{p+1} = (X^\top X + \rho I_{d \times d})^{-1}(X^\top Y + \rho z_p - u_p)
+]
+[
+z_{p+1} = \operatorname{prox}*{\lambda |\cdot|*1}(t*{p+1} + u_p/\rho)
+]
+[
+u*{p+1} = u_p + \rho(t_{p+1} - z_{p+1})
+\tag{30}
+]
+where ( \rho ) is some parameter to be chosen (for instance ( \rho = 10 )).
+The ADMM algorithm returns ( t_p ) after a stopping criteria is met.
+In Algorithm 4, we provide a MOM version of this algorithm.
+
+---
+
+**input** : ( (t_0,t_0') \in \mathbb{R}^d \times \mathbb{R}^d ) : initial point
+( \varepsilon > 0 ) : a stopping criteria
+( \rho ) : a parameter
+
+**output** : approximated solution to the min-max problem (23)
+
+1. **while** ( |t_{p+1} - t_p|*2 \ge \varepsilon ) **or** ( |t'*{p+1} - t'_p|_2 \ge \varepsilon ) **do**
+2.   find ( k \in [K] ) such that
+   [
+   \operatorname{MOM}*K(\ell*{t'*p} - \ell*{t_p}) = P_{B_k}(\ell_{t_p} - \ell_{t'*p})
+   ]
+   [
+   t*{p+1} = (X_k^\top X_k + \rho I_{d \times d})^{-1}(X_k^\top Y_k + \rho z_p - u_p)
+   ]
+   [
+   z_{p+1} = \operatorname{prox}*{\lambda |\cdot|*1}(t*{p+1} + u_p/\rho)
+   ]
+   [
+   u*{p+1} = u_p + \rho(t_{p+1} - z_{p+1})
+   ]
+3.   find ( k \in [K] ) such that
+   [
+   \operatorname{MOM}*K(\ell*{t'*p} - \ell*{t_{p+1}}) = P_{B_k}(\ell_{t_{p+1}} - \ell_{t'*p})
+   ]
+   [
+   t'*{p+1} = (X_k^\top X_k + \rho I_{d \times d})^{-1}(X_k^\top Y_k + \rho z'*p - u'*p)
+   ]
+   [
+   z'*{p+1} = \operatorname{prox}*{\lambda |\cdot|*1}(t'*{p+1} + u'*p/\rho)
+   ]
+   [
+   u'*{p+1} = u'*p + \rho(t'*{p+1} - z'_{p+1})
+   ]
+4. **end**
+5. **Return** ( (t_p,t'_p) )
+
+**Algorithm 3:** An ADMM algorithm for the minimaximization MOM estimator (23).
+
+---
+
+### A.6 Cyclic coordinate descent
+
+Repeatedly minimizing the LASSO objective function
+[
+t \mapsto |Y - Xt|*2^2 + \lambda |t|*1
+]
+with respect to each coordinate ( t_j ) has proved to be an efficient algorithm.
+The closed form solution (cf. for instance [31, p. 83]) is given by
+[
+t_j
+= \frac{R_j}{|X*{\cdot j}|*2^2}
+\left( 1 - \frac{\lambda}{2|R_j|} \right)*+
+\quad \text{with} \quad
+R_j = X*{\cdot j}^\top
+\left(
+Y - \sum_{k \ne j} t_k X_{\cdot k}
+\right).
+]
+
+We can adapt this algorithm to approximate the MOM estimator (23).
+Denote by ( X_{k j} ) the ( j )-th column of ( X_k ) for all ( j \in [d] ).
+
+---
+
+**input** : ( (t_0,t_0') \in \mathbb{R}^d \times \mathbb{R}^d ) : initial point
+( \varepsilon > 0 ) : a stopping criteria
+
+**output** : approximated solution to the min-max problem (23)
+
+1. **while** ( |t_{p+1} - t_p|*2 \ge \varepsilon ) **or** ( |t'*{p+1} - t'_p|_2 \ge \varepsilon ) **do**
+2.   find ( k \in [K] ) such that
+   [
+   \operatorname{MOM}*K(\ell*{t'*p} - \ell*{t_p}) = P_{B_k}(\ell_{t_p} - \ell_{t'_p})
+   ]
+3.   **for** ( j \in [d] ) **do**
+4.   [
+   t_{p+1,j}
+   = \frac{R_{k j}}{|X_{k j}|*2^2}
+   \left( 1 - \frac{\lambda}{2|R*{k j}|} \right)*+
+   \quad \text{with} \quad
+   R*{k j}
+   = X_{k j}^\top
+   \left(
+   Y_k - \sum_{q<j} t_{p+1,q} X_{k q}
+
+   * \sum_{q>j} t_{p,q} X_{k q}
+     \right)
+     ]
+5.   **end**
+6.   find ( k \in [K] ) such that
+   [
+   \operatorname{MOM}*K(\ell*{t'*p} - \ell*{t_{p+1}}) = P_{B_k}(\ell_{t_{p+1}} - \ell_{t'_p})
+   ]
+7.   **for** ( j \in [d] ) **do**
+8.   [
+   t'*{p+1,j}
+   = \frac{R*{k j}}{|X_{k j}|*2^2}
+   \left( 1 - \frac{\lambda}{2|R*{k j}|} \right)*+
+   \quad \text{with} \quad
+   R*{k j}
+   = X_{k j}^\top
+   \left(
+   Y_k - \sum_{q<j} t'*{p+1,q} X*{k q}
+
+   * \sum_{q>j} t'*{p,q} X*{k q}
+     \right)
+     ]
+9.   **end**
+10. **end**
+11. **Return** ( (t_p,t'_p) )
+
+**Algorithm 4:** A Cyclic Coordinate Descent algorithm for the minimax MOM estimator (23).
+
+---
+
+### A.7 Adaptive choice of hyper-parameters via MOM V-fold Cross Validation
+
+The choice of hyperparameters in a “data corrupted” environment has to be done carefully. Classical Cross-validation methods cannot be used because of the potential presence of outliers in the dataset that are likely to corrupt the classical CV-criterion. We design new (empirical) criteria that trustfully reveal performance of estimators even in situations where “test datasets” might have been corrupted.
+
+MOM’s principles can be combined with the idea of multiple splitting into training / test datasets in cross-validation. Let us now explain the construction of estimators ( \hat f_{\hat K,\hat \lambda} ) where the number of blocks ( \hat K ) and the regularization parameter ( \hat \lambda ) are hyper-parameters learned via such version of the CV principle.
+
+We are given an integer ( V \in [N] ) such that ( N ) is divided by ( V ). We are also given two finite grids ( \mathcal{G}*K \subset [N] ) and ( \mathcal{G}*\lambda \subset (0,1] ). Our aim is to chose the “best” numbers of blocks and best regularization parameter within both grids. The dataset is splitted into ( V ) disjoints blocks ( D_1, \ldots, D_V ). For each ( v \in [V] ), ( \bigcup_{u \ne v} D_u ) is used to train a family of estimators
+[
+\big( \hat f_{K,\lambda}^{(v)} : K \in \mathcal{G}*K, \lambda \in \mathcal{G}*\lambda \big).
+\tag{31}
+]
+
+The remaining ( D_v ) of the dataset is used to test the performance of each estimator in the family (31). Using these notations, we can define a MOM version of the cross-validation procedure.
+
+---
+
+**Definition 7.**
+The **Median of Means V-fold Cross Validation** procedure associated to the family of estimators (31) is ( \hat f_{\hat K,\hat \lambda} ) where ( (\hat K,\hat \lambda) ) is minimizing the MomCV(*V) criteria
+[
+(K,\lambda) \in \mathcal{G}*K \times \mathcal{G}*\lambda
+;\longmapsto;
+\operatorname{MomCV}*V(K,\lambda)
+= Q*{1/2}
+\left(
+\operatorname{MOM}*{K'}^{(v)}
+\big(
+\ell_{\hat f_{K,\lambda}^{(v)}}
+\big)*{v \in [V]}
+\right),
+]
+where, for all ( v \in [V] ) and ( f \in F ),
+[
+\operatorname{MOM}*{K'}^{(v)}(\ell_f)
+=====================================
+
+\operatorname{MOM}*{K'}
+\big(
+P*{B_1^{(v)}} \ell_f, \ldots, P_{B_{K'}^{(v)}} \ell_f
+\big).
+\tag{32}
+]
+
+and ( B_1^{(v)} \cup \cdots \cup B_{K'}^{(v)} ) is a partition of the test set ( D_v ) into ( K' ) blocks where ( K' \in [N/V] ) such that ( K' ) divides ( N/V ).
+
+---
+
+## Transcribed text
+
+The difference between standard V-fold cross validation procedure and its MOM version in Definition 7 is that empirical means on test sets ( D_v ) in the classical V-fold CV procedure have been replaced by MOM estimators in (32). Moreover, the mean over all ( V ) splits in the classical V-fold CV is replaced by a median.
+
+The choice of ( V ) raises the same issues for MOM CV as for classical V-fold CV [3, 4]. In the simulations we use ( V = 5 ). The construction of the MOM-CV requires to choose another parameter: ( K' ), the number of blocks used to construct the MOM criteria (32) over the test set. A possible solution is to take ( K' = K/V ). This has the advantage to make only one split of the dataset ( D ) into ( K ) blocks and then use for each of the ( V ) rounds, ( (V-1)K/V ) of these blocks to construct the family of estimators (31) and then ( K/V ) of these blocks to test them.
+
+In Figures 3 and 4, hyper-parameters ( K ) (i.e. the number of blocks) and ( \lambda ) (i.e. the regularization parameter) have been chosen for the MOM LASSO estimator via the MOM V-fold Cross validation procedure introduced above.
+
+**Figure 3:** Adaptively chosen number of blocks ( K ) for the MOM LASSO.
+
+**Figure 4:** Adaptively chosen ( \lambda ) for the LASSO and MOM LASSO.
+
+In Figure 3, the adaptively chosen ( \hat K ) grows with the number of outliers which is something expected since one needs the number of blocks to be at least twice the number of outliers.
+
+---
+
+## A.8 Maximinimization, saddle-point, random blocks, outliers detection and depth
+
+In the previous sections, we considered a setup that particularly fits a dataset distributed on clusters. This distributed source of data yields some specific partition of the dataset in compliance with the clusters structure – in other words, the blocks of data ( B_1, \ldots, B_K ) are imposed and fixed by the specific physical form of the dataset. In a batch setup, there is a priori no structural restriction to choose a fixed partition of the dataset given that it has no predefined organization.
+
+It appears that, in this setup, there is a way to improve the performance of the various iterative algorithms constructed in the previous sections by choosing randomly the blocks at every (descent and ascent) steps of the algorithm. The aim of this section is to show some advantages of this choice and how this modified version works on the example of ADMM. Moreover, as a byproduct of this approach, it is possible to construct an outliers detection algorithm. This algorithm outputs a score to each data in the dataset measuring its centrality. In particular, data with a low score should be considered as outliers.
+
+Note that the way we introduced the minimaximization estimator in Section 1 was based on the observation that the oracle is solution to the minimaximization problem
+[
+f^* \in \arg\min_{f \in F} \sup_{g \in F} P(\ell_f - \ell_g).
+]
+But it appears that ( f^* ) is also solution to a maximinimization problem:
+[
+f^* \in \arg\max_{g \in F} \inf_{f \in F} P(\ell_f - \ell_g).
+]
+This observation naturally yields another estimator: the maxmin estimator
+[
+\hat g_{K,\lambda} \in \arg\max_{g \in F} \inf_{f \in F} T_{K,\lambda}(g,f).
+\tag{33}
+]
+
+---
+
+## Explanation of the charts
+
+### Figure 3 — Adaptively chosen number of blocks ( K ) (MOM LASSO)
+
+* **x-axis:** Proportion of outliers in the dataset
+* **y-axis:** Adaptively chosen number of blocks ( \hat K )
+
+**What the plot shows**
+
+* As the proportion of outliers increases, the selected number of blocks ( \hat K ) increases.
+* The growth is roughly monotonic.
+
+**Why this makes sense**
+
+* MOM estimators require **at least twice as many blocks as outliers** to guarantee robustness.
+* Increasing ( K ) means:
+
+  * smaller block sizes,
+  * fewer outliers per block,
+  * higher probability that the *median block* is uncontaminated.
+* The MOM V-fold CV automatically adapts ( K ) to contamination level without prior knowledge of the number of outliers.
+
+**Key takeaway**
+
+> MOM-CV correctly detects increasing contamination and compensates by increasing robustness.
+
+---
+
+### Figure 4 — Adaptively chosen regularization ( \lambda ) (LASSO vs MOM LASSO)
+
+* **x-axis:** Proportion of outliers
+* **y-axis:** Adaptively chosen ( \lambda )
+* **Curves:**
+
+  * **Solid blue:** MOM LASSO
+  * **Dashed green:** classical LASSO
+
+**What the plot shows**
+
+* Classical LASSO selects highly unstable values of ( \lambda ) as outliers increase.
+* MOM LASSO selects more stable and controlled values of ( \lambda ).
+
+**Why this happens**
+
+* Classical CV uses empirical means → heavily affected by outliers.
+* MOM-CV replaces means with medians → resistant to corrupted test blocks.
+* MOM LASSO therefore avoids:
+
+  * over-penalization,
+  * erratic regularization choices.
+
+**Key takeaway**
+
+> MOM LASSO provides **robust and stable hyperparameter selection** even under strong contamination, unlike classical LASSO.
+
+---
+
+## High-level interpretation
+
+Together, Figures 3 and 4 demonstrate that:
+
+* MOM V-fold CV **automatically adapts** both:
+
+  * structural robustness (( K )),
+  * statistical regularization (( \lambda )).
+* This adaptation is **data-driven**, **outlier-robust**, and **theoretically justified**.
+* Classical CV fails under contamination; MOM-CV remains reliable.
+
+---
+
+Following the same strategy as in Section 4, we can show that ( \hat g_{K,\lambda} ) has the very same statistical performance as the estimator ( \hat f_{K,\lambda} ) from Section 3.4 (cf. Section C in the case where there is no regularization for a proof). Nevertheless, there is a priori no reason that ( \hat g_{K,\lambda} ) and ( \hat f_{K,\lambda} ) are the same estimator. That is we don’t know in advance that
+[
+\arg\min_{f \in F} \sup_{g \in F} T_{K,\lambda}(g,f)
+====================================================
+
+\arg\max_{g \in F} \inf_{f \in F} T_{K,\lambda}(g,f).
+\tag{34}
+]
+
+In other words there is no evidence that the duality gap is null. Since
+[
+T_{K,\lambda}(g,f) = -T_{K,\lambda}(f,g),
+]
+(34) holds if and only if
+[
+\inf_{f \in F} \sup_{g \in F} T_{K,\lambda}(f,g) = 0.
+]
+
+In that case, ( \hat f ) is by definition a **saddle-point estimator** and therefore the two sets of minmax and maxmin estimators are equal.
+
+---
+
+**Remark 6 (stopping criteria).**
+Along iterations of the previous algorithms it is possible to track down the values of the objective function
+[
+\operatorname{MOM}*K(\ell*{t_p} - \ell_{t'_p})
+
+* \lambda \big( |t_p|_1 - |t'_p|_1 \big).
+  ]
+  When this one is close to zero this means that it has achieved a saddle-point and therefore the output of the algorithm is close to the solution of the minmax problem (as well as the maxmin problem).
+
+When ( \hat f ) is a saddle-point, the choice of fixed blocks ( B_1, \ldots, B_K ) may result in a problem of **“local saddle points”**: iterations of our original algorithms remain close to a potentially suboptimal local saddle point.
+
+To see this, let us consider the vector case (that is for ( f(\cdot) = \langle \cdot, t \rangle ) for ( t \in \mathbb{R}^d )). We introduce the following sets: for all ( k \in [K] ),
+[
+\mathcal{C}_k
+=============
+
+\big{ (t,t') \in \mathbb{R}^d \times \mathbb{R}^d :
+\operatorname{MOM}*K(\ell_t - \ell*{t'}) = P_{B_k}(\ell_t - \ell_{t'}) \big}.
+\tag{35}
+]
+
+It is clear that
+[
+\bigcup_{k \in [K]} \mathcal{C}_k = \mathbb{R}^d \times \mathbb{R}^d.
+]
+
+The key idea behind all the previous algorithms is that at each step the current iteration ( (t_p, t'_p) ) lies in one of those cells ( \mathcal{C}_k ) and that, if Assumption 4 holds, for almost all iterations there will be an open ball around ( (t_p, t'*p) ) contained in the cell ( \mathcal{C}*k ) so that the objective function is locally equal to
+[
+(t,t') ;\mapsto; P*{B_k}(\ell_t - \ell*{t'})
+
+* \lambda \big( |t|_1 - |t'|_1 \big),
+  ]
+  which is a convex–concave function.
+
+The problem here is that our algorithms are looking for saddle-points so that if there are several cells ( \mathcal{C}_k ) containing saddle-points the previous algorithms may be stuck in one of them whereas a **“better saddle-point”** (that is a saddle point closer to ( t^* )) may be in another cell.
+
+To overcome this issue, we choose at every (descent and ascent) steps of the previous algorithms a **random partition** of the dataset into ( K ) blocks. The decomposition of the space ( \mathbb{R}^d \times \mathbb{R}^d ) into cells ( \mathcal{C}_1, \ldots, \mathcal{C}_K ) does not exist anymore since the cells are different (randomly chosen) at every steps. As an example, we develop the ADMM procedure with a random choice of blocks in Algorithm 5.
+
+---
+
+## Transcribed text
+
+**input** : ( (t_0,t_0') \in \mathbb{R}^d \times \mathbb{R}^d ) : initial point
+( \varepsilon > 0 ) : a stopping criteria
+( \rho ) : parameter
+
+**output** : approximated solution to the min-max problem (23)
+
+1. **while** ( |t_{p+1} - t_p|*2 \ge \varepsilon ) **or** ( |t'*{p+1} - t'_p|_2 \ge \varepsilon ) **do**
+2.   Partition the datasets into ( K ) blocks ( B_1,\ldots,B_K ) of equal size at random.
+3.   Find ( k \in [K] ) such that
+   [
+   \operatorname{MOM}*K(\ell*{t'*p} - \ell*{t_p}) = P_{B_k}(\ell_{t_p} - \ell_{t'*p})
+   ]
+   [
+   t*{p+1} = (X_k^\top X_k + \rho I_{d \times d})^{-1}(X_k^\top Y_k + \rho z_p - u_p)
+   ]
+   [
+   z_{p+1} = \operatorname{prox}*{\lambda|\cdot|*1}(t*{p+1} + u_p/\rho)
+   ]
+   [
+   u*{p+1} = u_p + \rho(t_{p+1} - z_{p+1})
+   ]
+4.   Partition the datasets into ( K ) blocks ( B_1,\ldots,B_K ) of equal size at random.
+5.   Find ( k \in [K] ) such that
+   [
+   \operatorname{MOM}*K(\ell*{t'*p} - \ell*{t_{p+1}}) = P_{B_k}(\ell_{t_{p+1}} - \ell_{t'*p})
+   ]
+   [
+   t'*{p+1} = (X_k^\top X_k + \rho I_{d \times d})^{-1}(X_k^\top Y_k + \rho z'*p - u'*p)
+   ]
+   [
+   z'*{p+1} = \operatorname{prox}*{\lambda|\cdot|*1}(t'*{p+1} + u'*p/\rho)
+   ]
+   [
+   u'*{p+1} = u'*p + \rho(t'*{p+1} - z'_{p+1})
+   ]
+6. **end**
+7. **Return** ( (t_p,t'_p) )
+
+**Algorithm 5:** The ADMM algorithm for the minimax MOM estimator (23) with a random choice of blocks at each steps.
+
+---
+
+**Figure 5:** Fixed blocks against random blocks.
+
+In Figure 5, we ran both MOM LASSO procedures via ADMM with fixed and random blocks. Both the objective function and the estimation error of MOM LASSO jump in the case of fixed blocks. These jumps correspond to a change of cell number for these iterations. The algorithm converge to local saddle-points before jumping to other cells. This slows down the convergence.
+
+On the other hand, the algorithms with random blocks do not suffer this drawback. Figure 5 shows that the estimation error converges much faster and smoothly for random blocks than for fixed blocks. As a conclusion choosing blocks at random improve both stability and speed of the algorithm, avoiding the issue of “local saddle points” in the cells ( \mathcal{C}_k ).
+
+Note also that the objective function of the MOM ADMM with random blocks tends to zero so that the duality gap tends to zero (meaning that we do have a natural stopping criterium and that the MOM LASSO is a saddle point).
+
+---
+
+## Explanation of the graphs (Figure 5)
+
+Figure 5 contains **two plots**, both comparing:
+
+* **Blue curve:** MOM-ADMM with **fixed blocks**
+* **Purple curve:** MOM-ADMM with **random blocks**
+
+---
+
+### Left plot — Objective function vs number of iterations
+
+**Axes**
+
+* x-axis: Number of iterations
+* y-axis: Objective function value
+  [
+  \operatorname{MOM}*K(\ell_t - \ell*{t'}) + \lambda(|t|_1 - |t'|_1)
+  ]
+
+**What you see**
+
+* With **fixed blocks** (blue):
+
+  * Large oscillations and sudden jumps.
+  * The objective decreases, then abruptly increases, then decreases again.
+* With **random blocks** (purple):
+
+  * Smooth, monotone decay.
+  * Rapid convergence toward zero.
+
+**Why this happens**
+
+* Fixed blocks create **cells ( \mathcal{C}_k )** in parameter space.
+* The algorithm can get trapped in **local saddle points** inside a cell.
+* When it switches to another cell, the objective jumps.
+* Random blocks **destroy the fixed cell structure**, preventing trapping.
+
+**Interpretation**
+
+> Random blocks stabilize the optimization landscape and allow continuous progress toward the global saddle point.
+
+---
+
+### Right plot — Estimation error vs number of iterations
+
+**Axes**
+
+* x-axis: Number of iterations
+* y-axis: Estimation error (distance to ( t^* ))
+
+**What you see**
+
+* **Fixed blocks**:
+
+  * Slow convergence.
+  * Error plateaus for long periods.
+  * Sudden drops when the algorithm escapes a local saddle point.
+* **Random blocks**:
+
+  * Fast, smooth, almost monotone decrease.
+  * Reaches very low error much earlier.
+
+**Why this matters**
+
+* Estimation error directly measures **statistical accuracy**.
+* Faster decrease means:
+
+  * fewer iterations,
+  * better robustness,
+  * more reliable stopping.
+
+**Interpretation**
+
+> Random blocks significantly accelerate learning and improve statistical efficiency.
+
+---
+
+## Key takeaways
+
+1. **Fixed blocks → local saddle points**
+
+   * Causes oscillations and slow convergence.
+2. **Random blocks → smoother geometry**
+
+   * Avoids local saddle traps.
+3. **Objective → 0**
+
+   * Duality gap → 0
+   * Confirms convergence to a true saddle point.
+4. **Practical implication**
+
+   * Random block MOM-ADMM is:
+
+     * faster,
+     * more stable,
+     * better suited for large-scale and contaminated data.
+
+---
+
+## Transcribed text
+
+A byproduct of this approach is that one can construct an **outliers detection procedure**. To that end one simply has to count the number of times each data is selected at steps 2 and 4 of Algorithm 5. Every data starts with a null score. Then, every time a block ( B ) is selected as median block, every data it contains increases its score by one. At the end, every data ends up with a score revealing its centrality for our learning task.
+
+It is expected that aggressive outliers corrupt their respective blocks. These “corrupted blocks” will not be median blocks and will not be chosen. In the case of fixed blocks, informative data cannot be distinguished from outliers lying in the same block, therefore, this outliers detection algorithm only makes sense when blocks are chosen at random. Figure 6 shows performance of this strategy on synthetic data (cf. Section A.9 for more details on the simulations). On this example, outliers (data number 1, 32, 170 and 194) end up with a null score meaning that they have never been selected along the descent / ascent iterations of the algorithm. Rearranging the scores, one can observe a jump in the score function between outliers and informative data. The gap between these scores can be enlarged by running more iterations of the algorithm. Finally, the score may be seen as a **depth** of a data point ( (X_i, Y_i) ), the most selected data are the most central.
+
+**Figure 6:** Outliers detection algorithm. The dataset has been corrupted by 4 outliers at number 1, 32, 170 and 194. The score of the outliers is 0: they haven’t been selected even once.
+
+---
+
+### A.9  Simulations setup for the figures
+
+All codes used to obtain the figures in this work are available at [1] and can therefore be used to reproduce all the figures. Let us now precise the parameters of the simulations in Figure 1, Figure 3 and Figure 4: the number of observations is ( N = 200 ), the number of features is ( d = 500 ), we construct a sparse vector ( t^* \in \mathbb{R}^d ) with sparsity ( s = 10 ) and support chosen at random and non-zero coordinates ( t_j^* ) being either equal to 10, −10 or decreasing according to ( \exp(-j/10) ). We end up with a set of informative data ( D_1 ) as described in Section A with noise variance ( \sigma = 1 ). Then this dataset is increasingly corrupted with outliers as in ( D_4 ) (cf. Section A): outliers are data with output ( Y = 10000 ) and input ( X = (1)^d_{j=1} ). The proportion of outliers are 0, 1/100, 2/100, …, 15/100. On each dataset ( D_1 \cup D_4 ) obtained after corruption of ( D_1 ) for various proportion of outliers, we run the ADMM algorithm with adaptively chosen regularization parameter ( \lambda ) via V-fold CV with ( V = 5 ) for the LASSO. Then we run the MOM-ADMM with adaptively chosen number of blocks ( K ) and regularization parameter ( \lambda ) via the MOM-CV procedure as introduced in Section A.7 with ( V = 5 ) and ( K' = \max(\text{grid}_K)/V ) where
+( \text{grid}*K = {1,4,\dots,115/4} ) and
+( \text{grid}*\lambda = {0,10,20,\dots,100}/\sqrt{100} )
+are the search grids used to select the best ( K ) and ( \lambda ) during the CV and MOM-CV steps. The number of iterations of ADMM and MOM-ADMM was taken equal to 200. Those simulations have been run 70 times and the averaged values of the estimation error, adaptively chosen ( K ) and ( \lambda ) have been reported in Figure 1, Figure 3 and Figure 4. The ( \ell_2 ) estimation error of the LASSO increases roughly from 0 when there is no outlier and stabilizes at 550 right after a single outlier enter the…
+
+*(text cuts at the bottom of the image)*
+
+---
+
+## Explanation of Figure 6 (Outliers detection graph)
+
+### What the graph shows
+
+* **x-axis:** data indices (from 1 to 200)
+* **y-axis:** *score* (number of times a data point appears in a **median block** during the MOM iterations)
+
+Each vertical bar corresponds to **one data point**.
+
+---
+
+### How the score is constructed
+
+1. At every iteration of the MOM-ADMM algorithm:
+
+   * Data are randomly partitioned into blocks.
+   * The *median block* is selected.
+2. Every data point inside that median block gets its **score increased by 1**.
+3. After many iterations, each data point has a final score measuring how often it was “central”.
+
+---
+
+### Interpretation of the bars
+
+* **Tall bars (high score):**
+
+  * Data points frequently selected in median blocks.
+  * These are **informative, reliable, central** data.
+* **Very small or zero bars:**
+
+  * Data points *never* selected.
+  * These are **outliers**.
+
+In Figure 6:
+
+* Data points **1, 32, 170, 194** have **score = 0**.
+* These are exactly the injected outliers.
+* All other points have large scores (≈ 1000), clearly separated from outliers.
+
+---
+
+### Why this works
+
+* Outliers strongly distort block statistics.
+* Blocks containing outliers are **not median blocks**.
+* Therefore:
+
+  * Outliers are **never selected**,
+  * Their score remains zero.
+* Random block selection is crucial; with fixed blocks, outliers could hide among good points.
+
+---
+
+### Key takeaway
+
+> The MOM procedure naturally produces an **outlier detection mechanism** *for free*.
+
+* No extra algorithm is needed.
+* The score acts as a **depth / centrality measure**:
+
+  * High score → central data
+  * Zero score → outlier
+
+Running more iterations:
+
+* Increases the separation (“gap”) between outliers and good data.
+* Makes detection more robust and visually obvious.
+
+
+---
+
+dataset. The ( \ell_2 ) estimation error value 550 can be explained by the fact that the outliers which was added is ( Y = 10000 ) and ( X = (1)^{500}*{j=1} ) which satisfies
+[
+Y = \langle X, t^{**} \rangle
+]
+for
+[
+t^{**} = (20)^{500}*{j=1}
+]
+which is the solution with minimal ( \ell_1^d ) norm among all the solutions ( t \in \mathbb{R}^d ) such that ( Y = \langle X, t \rangle ).
+It appears that ( |t^{**} - t^*|_2 ) is of the order of 550. It means that the LASSO is actually solving the solution to the linear program associated with the outlier instead of solving the linear problem associated with the 200 other informative data. A single outliers is therefore completely misleading the LASSO.
+
+For Figure 5, we have run similar experiments with ( N = 200 ), ( d = 300 ), ( s = 20 ), ( \sigma = 1 ), ( K = 10 ), the number of iterations was 500 and the regularization parameter was ( 1/\sqrt{N} ).
+
+For Figure 6, we took ( N = 200 ), ( d = 500 ), ( s = 20 ), ( \sigma = 1 ), the number of outliers is ( |O| = 4 ) and the outliers are of the form ( Y = 10000 ) and ( X = (1)^d_{j=1} ), ( K = 10 ), the number of iterations is 5 000 and ( \lambda = 1/\sqrt{200} ).
+
+---
+
+## B Examples of applications
+
+This section is dedicated to some applications of Theorem 2. We present two classical examples of regularization in high-dimensional statistics: the ( \ell_1 )-norm and the SLOPE norm. The associated RERM have been extensively studied in the literature under strong assumptions. The aim of this section is to show that these assumptions can be strongly relaxed when dealing with MOM versions. For instance, as observed in Figure 1, the performance of the LASSO are drastically deteriorated in the presence of a single outlier while its MOM version remains informative.
+
+---
+
+### B.1 The LASSO
+
+The LASSO is obtained when ( F = {\langle t, \cdot \rangle : t \in \mathbb{R}^d} ) and the regularization function is the ( \ell_1 )-norm:
+[
+\hat t \in \arg\min_{t \in \mathbb{R}^d}
+\left(
+\frac{1}{N} \sum_{i=1}^N (\langle t, X_i \rangle - Y_i)^2 + \lambda |t|_1
+\right),
+\qquad
+\text{where } |t|*1 = \sum*{i=1}^d |t_i|.
+]
+
+Even if recent advances [98, 91, 74] have shown some limitations of LASSO, it remains the benchmark estimator in high-dimensional statistics because a high dimensional parameter space does not significantly affect its performance as long as ( t^* ) is sparse. This was shown for example, in [14, 58, 93, 94, 65, 72, 90] for estimation and sparse oracle inequalities, in [64, 99, 6] for support recovery results; more results and references on LASSO can be found in the books [19, 44].
+
+---
+
+### B.2 SLOPE
+
+SLOPE is an extension of the LASSO that was introduced in [16, 84]. The class ( F ) is still
+[
+F = {\langle t, \cdot \rangle : t \in \mathbb{R}^d}
+]
+and the regularization function is defined for parameters
+[
+\beta_1 \ge \beta_2 \ge \cdots \ge \beta_d > 0
+]
+by
+[
+|t|*{\text{SLOPE}} = \sum*{i=1}^d \beta_i t_i^\sharp,
+]
+where ( (t_i^\sharp)*{i=1}^d ) denotes the non-increasing re-arrangement of ( (|t_i|)*{i=1}^d ).
+SLOPE norm is a weighted ( \ell_1 )-norm that coincide with ( \ell_1 )-norm when
+[
+(\beta_1,\ldots,\beta_d) = (1,\ldots,1).
+]
+
+---
+
+### B.3 Classical results for LASSO and SLOPE
+
+Typical results for LASSO and SLOPE have been obtained in the i.i.d. setup under a subgaussian assumption on the design ( X ) and, most of the time, on the noise ( \zeta ) as well. Let us for the moment provide a definition of this assumption and recall the one of isotropicity.
+
+---
+
+**Definition 8.** Let ( \ell_2^d ) be a ( d )-dimensional inner product space and let ( X ) be random variable with values in ( \ell_2^d ). We say that ( X ) is isotropic when for every ( t \in \ell_2^d ),
+[
+|\langle X,t\rangle|*{L_2} = |t|*{\ell_2^d}
+]
+and it is ( L )-subgaussian if for every ( p \ge 2 ) and every ( t \in \ell_2^d ),
+[
+|\langle X,t\rangle|*{L_p} \le L\sqrt{p},|\langle X,t\rangle|*{L_2}.
+]
+
+In other words, the covariance structure of an isotropic random variable coincides with the inner product in ( \ell_2^d ), and if ( X ) is an ( L )-subgaussian random vector then the ( L_p ) norm of all linear forms does not grow faster than the ( L_p ) norm of the corresponding Gaussian variable. When dealing with the LASSO and SLOPE, the natural Euclidean structure is used in ( \mathbb{R}^d ).
+
+In the following assumption, we recall a setup where both estimators have been studied in [51].
+
+**Assumption 5.**
+
+1. the data are i.i.d. (in particular, ( |I| = N ) and ( |O| = 0 ), i.e. there is no outlier),
+2. ( X ) is isotropic and ( L )-subgaussian,
+3. for ( f^* = \langle t^*, \cdot \rangle ), ( \zeta = Y - f^*(X) \in L^{q_0} ) for some ( q_0 > 2 ).
+
+Unlike many results on these estimators, Assumption 5 only requires a “minimal” ( L^{q_0} ) for ( q_0 > 2 ) moment on the noise. It appears that LASSO and SLOPE still achieve optimal rates of convergence under this weak stochastic assumption but the price to pay is a severely deteriorated probability estimate.
+
+**Theorem 3 (Theorem 1.4 in [51]).** Consider the LASSO under Assumption 5. Let ( s \in [d] ). Assume that ( N \ge c_1 s \log(ed/s) ) and that there is some ( v \in \mathbb{R}^d ) supported on at most ( s ) coordinates for which
+[
+|t^* - v|*1 \le c_2 |\zeta|*{L_{q_0}} s \sqrt{\frac{\log(ed)}{N}}.
+]
+The LASSO estimator ( \hat t ) with regularization parameter
+[
+\lambda = c_3 |\zeta|*{L*{q_0}} \sqrt{\frac{\log(ed)}{N}}
+]
+is such that with probability at least
+[
+1 - \frac{c_4 \log^{q_0} N}{N^{q_0/2 - 1}} - 2\exp(-c_5 s \log(ed/s)),
+\tag{36}
+]
+for every ( 1 \le p \le 2 ),
+[
+|\hat t - t^*|*p \le c_6 |\zeta|*{L_{q_0}} s^{1/p} \sqrt{\frac{\log(ed)}{N}}.
+]
+
+The constants ( (c_j)_{j=1}^6 ) depend only on ( L ) and ( q_0 ).
+
+The error rate in Theorem 3 coincides with the standard estimate on the LASSO (cf. [14]), but in a broader context: ( t^* ) does not need to be sparse but should be approximated by a sparse vector; the target ( Y ) is arbitrary (there is no need for a statistical model) and the noise ( \zeta ) may be heavy tailed and does not need to be independent from ( X ). But there is no room for outliers, the design matrix ( X ) still needs to be subgaussian and the data are assumed to be i.i.d. We will see below that the MOM version of the LASSO can go further, achieving minimax optimal error bounds with a much better probability estimate.
+
+Turning to SLOPE, recall the following result for the regularization norm
+[
+\Psi(t) = \sum_{j=1}^d \beta_j t_j^\sharp
+]
+when ( \beta_j = C \sqrt{\log(ed/j)} ).
+
+**Theorem 4 (Theorem 1.6 in [51]).** Consider the SLOPE under Assumption 5. Assume that ( N \ge c_1 s \log(ed/s) ) and that there is ( v \in \mathbb{R}^d ) such that ( |\operatorname{supp}(v)| \le s ) and
+[
+\Psi(t^* - v) \le c_2 |\zeta|*{L*{q_0}} \frac{s \log(ed/s)}{\sqrt{N}}.
+]
+The SLOPE estimator ( \hat t ) with regularization parameter
+[
+\lambda = c_3 |\zeta|*{L*{q_0}} \sqrt{N},
+]
+satisfies with the same probability as in (36) that
+[
+\Psi(\hat t - t^*) \le c_4 |\zeta|*{L*{q_0}} \frac{s}{\sqrt{N}} \log!\left(\frac{ed}{s}\right)
+\quad \text{and} \quad
+|\hat t - t^*|*2^2 \le c_5 |\zeta|*{L_{q_0}}^2 \frac{s}{N} \log!\left(\frac{ed}{s}\right).
+]
+
+The constants ( (c_j)_{j=1}^5 ) depend only on ( L ) and ( q_0 ).
+
+---
+
+### **B.4 Statistical analysis of MOM LASSO and MOM SLOPE**
+
+In this section, Theorem 2 is applied to the set ( F ) of linear functionals indexed by ( \mathbb{R}^d ) with regularization functions being either the ( \ell_1 )-norm or the SLOPE norm. The aim is to show that the results from Section B.3 are still satisfied (and sometimes even improved) by their MOM version under much weaker assumptions and with a much better probability deviation. Start with the new set of assumptions.
+
+**Assumption 6.** Denote by ( (e_j)_{j=1}^d ) the canonical basis of ( \mathbb{R}^d ). We assume that
+
+1. ( |I| \ge N/2 ) and ( |O| \le c_1 s \log(ed/s) ),
+2. ( X ) is isotropic and for every ( t \in \mathbb{R}^d ), ( p \in [C_0 \log(ed)] ) and ( j \in [d] ),
+   [
+   |\langle X,e_j\rangle|*{L_p} \le L\sqrt{p},|\langle X,e_j\rangle|*{L_2},
+   ]
+3. for ( f^*=\langle t^*,\cdot\rangle ), ( \zeta = Y - f^*(X) \in L^{q_0} ) for some ( q_0>2 ),
+4. there exists ( \theta_0 ) such that for all ( t\in\mathbb{R}^d ),
+   [
+   |\langle X,t\rangle|*{L_2} \le \theta_0 |\langle X,t\rangle|*{L_1},
+   ]
+5. there exists ( \theta_m ) such that
+   [
+   \operatorname{var}(\zeta\langle X,t\rangle) \le \theta_m |\langle X,t\rangle|_{L_2}^2.
+   ]
+
+In order to apply Theorem 2 we need to compute the fixed point functions ( r_Q(\cdot) ), ( r_M(\cdot) ) and solve the sparsity equation in both cases. We start with the fixed point functions. To that end we recall the definition of Gaussian mean widths: for a set ( V \subset \mathbb{R}^d ), the Gaussian mean width of ( V ) is defined as
+[
+\ell^*(V)
+= \mathbb{E}\left{
+\sup_{(v_j)\in V} \sum_{j=1}^d g_j v_j
+\right},
+\quad \text{where } (g_1,\ldots,g_d)\sim\mathcal{N}_d(0,I_d).
+\tag{37}
+]
+
+The dual norm of the ( \ell_1^d )-norm is the ( \ell_\infty^d )-norm which is 1-unconditional with respect to the canonical basis of ( \mathbb{R}^d ) [70, Definition 1.4]. Therefore, [70, Theorem 1.6] applies under the following assumption.
+
+**Assumption 7.** There exist constants ( q_0>2 ), ( C_0 ) and ( L ) such that ( \zeta \in L^{q_0} ), ( X ) is isotropic and for every ( j\in[d] ) and ( 1\le p\le C_0\log d ),
+[
+|\langle X,e_j\rangle|*{L_p} \le L\sqrt{p},|\langle X,e_j\rangle|*{L_2}.
+]
+
+Under Assumption 7, if ( \sigma=|\zeta|*{L*{q_0}} ), [70, Theorem 1.6] shows that, for every ( \rho>0 ),
+[
+\mathbb{E}\sup_{v\in\rho B_1^d\cap rB_2^d}
+\left|
+\sum_{i\in[N]} \varepsilon_i \langle v,X_i\rangle
+\right|
+\le c_2\sqrt{N},\ell^*(\rho B_1^d\cap rB_2^d),
+]
+[
+\mathbb{E}\sup_{v\in\rho B_1^d\cap rB_2^d}
+\left|
+\sum_{i\in[N]} \varepsilon_i \zeta_i \langle v,X_i\rangle
+\right|
+\le c_2\sigma\sqrt{N},\ell^*(\rho B_1^d\cap rB_2^d).
+]
+
+Local Gaussian mean widths ( \ell^*(\rho B_1^d\cap rB_2^d) ) are bounded from above in [56, Lemma 5.3] and computations of ( r_M(\cdot) ) and ( r_Q(\cdot) ) follow
+[
+r_M^2(\rho)\ \lesssim_{L,q_0,\gamma_M}
+\begin{cases}
+\sigma^2,\dfrac{d}{N}, & \text{if } \rho^2 N \ge \sigma^2 d^2,[6pt]
+\rho\sigma\sqrt{\dfrac{1}{N}\log!\left(\dfrac{e\sigma d}{\rho\sqrt{N}}\right)},
+& \text{otherwise},
+\end{cases}
+]
+[
+r_Q^2(\rho)\ \lesssim_{L,\gamma_Q}
+\begin{cases}
+0, & \text{if } N \gtrsim_{L,\gamma_Q} d,[6pt]
+\dfrac{\rho^2}{N}\log!\left(\dfrac{c(L,\gamma_Q)d}{N}\right),
+& \text{otherwise}.
+\end{cases}
+]
+
+Therefore, one can take
+[
+r^2(\rho)\ \sim_{L,q_0,\gamma_Q,\gamma_M}
+\begin{cases}
+\max!\left(
+\rho\sigma\sqrt{\dfrac{1}{N}\log!\left(\dfrac{e\sigma d}{\rho\sqrt{N}}\right)},
+\dfrac{\sigma^2 d}{N}
+\right),
+& \text{if } N \gtrsim_L d,[10pt]
+\max!\left(
+\rho\sigma\sqrt{\dfrac{1}{N}\log!\left(\dfrac{e\sigma d}{\rho\sqrt{N}}\right)},
+\dfrac{\rho^2}{N}\log!\left(\dfrac{d}{N}\right)
+\right),
+& \text{otherwise}.
+\end{cases}
+\tag{38}
+]
+
+---
+
+Now we turn to a solution of the sparsity equation for the ( \ell_1^d )-norm. This equation has been solved in [56, Lemma 4.2], we recall this result.
+
+**Lemma 7.** *If there exists ( v \in \mathbb{R}^d ) such that*
+[
+v \in t^* + (\rho/20)B_1^d
+\quad \text{and} \quad
+|\operatorname{supp}(v)| \le c\rho^2/r^2(\rho)
+]
+*then*
+[
+\Delta(\rho)
+============
+
+\inf_{h\in\rho S_1^{d-1}\cap r(\rho)B_2^d}
+\sup_{g\in\Gamma_{t^*}(\rho)}
+\langle h, g - t^* \rangle
+\ge \frac{4\rho}{5}.
+]
+
+where ( S_1^{d-1} ) is the unit sphere of the ( \ell_1^d )-norm and ( B_2^d ) is the unit Euclidean ball in ( \mathbb{R}^d ).
+
+As a consequence, if ( N \gtrsim s\log(ed/s) ) and if there exists an ( s )-sparse vector in ( t^* + (\rho/20)B_1^d ), Lemma 7 and the choice of ( r(\cdot) ) in (38) imply that for
+[
+\sigma = |\zeta|*{L^{q_0}},
+]
+[
+\rho^* \sim*{L,q_0} \sigma s \sqrt{\frac{1}{N}\log!\left(\frac{ed}{s}\right)}
+\quad \text{and} \quad
+r^2(\rho^*) \sim \frac{\sigma^2 s}{N}\log!\left(\frac{ed}{s}\right),
+]
+
+then ( \rho^* ) satisfies the sparsity equation and ( r^2(\rho^*) ) is the rate of convergence of the LASSO for
+[
+\lambda \sim \frac{r^2(\rho^*)}{\rho^*}
+\sim |\zeta|_{L^{q_0}}\sqrt{\frac{\log(ed/s)}{N}}.
+]
+
+But, this choice of ( \lambda ) requires to know the sparsity parameter ( s ) which is usually not available. That is the reason why we either need to choose a larger value for the ( r(\cdot) ) function as in [51] — this results in the suboptimal ( \sqrt{\log(ed)/N} ) rates of convergence from Theorem 3 — or to use an adaptation step as Section 3.4.1 — this results in the better minimax rate ( \sqrt{\log(ed/s)/N} ) achieved by the MOM LASSO.
+
+To get the latter one needs a final ingredient which is the computation of the radii ( \rho_K ) and
+[
+\lambda \sim \frac{r^2(\rho_K)}{\rho_K}.
+]
+Let ( K\in[N] ) and ( \sigma = |\zeta|*{L^{q_0}} ). The equation
+[
+K = c,r(\rho_K)^2 N
+]
+is solved by
+[
+\rho_K \sim*{L,q_0} \frac{K}{\sigma}\sqrt{\frac{1}{N}\log^{-1}!\left(\frac{\sigma^2 d}{K}\right)}.
+\tag{39}
+]
+
+for the ( r(\cdot) ) function defined in (38). Therefore,
+[
+\lambda \sim \frac{r^2(\rho_K)}{\rho_K}
+\sim_{L,q_0}
+\sigma\sqrt{\frac{1}{N}\log!\left(\frac{e\sigma d}{\rho_K\sqrt{N}}\right)}
+\sim_{L,q_0}
+\sigma\sqrt{\frac{1}{N}\log!\left(\frac{e\sigma^2 d}{K}\right)}.
+\tag{40}
+]
+
+The regularization parameter depends on the “level of noise” ( \sigma ), the ( L^{q_0} )-norm of ( \zeta ). This parameter is unknown in practice. Nevertheless, it can be estimated and replaced by this estimator in the regularization parameter as in [31, Sections 5.4 and 5.6.2].
+
+The following result follows from Theorem 2 together with the computation of ( \rho^* ), ( r_Q(\cdot) ), ( r_M(\cdot) ) and ( r(\cdot) ) from the previous sections.
+
+**Theorem 5.** *Grant Assumption 6. The MOM-LASSO estimator ( \hat t ) satisfies, with probability at least*
+[
+1 - c_1 \exp(-c_2 s \log(ed/s)),
+]
+*for every ( 1 \le p \le 2 ),*
+[
+|\hat t - t^*|*p
+\le c_3 |\zeta|*{L^{q_0}}, s^{1/p}\sqrt{\frac{1}{N}\log!\left(\frac{ed}{s}\right)},
+]
+
+where ( (c_j)_{j=1}^3 ) depends only on ( \theta_0 ), ( \theta_m ) and ( q_0 ).
+
+In particular, Theorem 5 shows that, for our estimator contrary to the one in [60], the sparsity parameter ( s ) does not have to be known in advance in the LASSO case.
+
+**Proof.** It follows from Theorem 2, the computation of ( r(\rho_K) ) from (38) and ( \rho_K ) in (39) that with probability at least
+[
+1 - c_0 \exp(-c r(\rho_K)^2 N / \bar C),
+]
+[
+|\hat t - t^*|_1 \le \rho_K
+\quad \text{and} \quad
+|\hat t - t^*|_2 \lesssim r(\rho_K).
+]
+
+The result follows since
+[
+\rho_K \sim \rho^* \sim_{L,q_0} \sigma s\sqrt{\frac{1}{N}\log!\left(\frac{ed}{s}\right)}
+]
+and
+[
+|v|_p \le |v|_1^{1-2/p}|v|_2^{2/p}
+\quad \text{for all } v\in\mathbb{R}^d \text{ and } 1\le p\le 2.
+]
+(\blacksquare)
+
+---
+
+Theoretical properties of **MOM LASSO** (cf. Theorem 5) outperform those of **LASSO** (cf. Theorem 3) in several ways:
+
+* **Estimation rates** achieved by MOM-LASSO are the actual minimax rates
+  ( s \log(ed/s)/N ), see [13],
+  while classical LASSO estimators achieve the rate ( s \log(ed)/N ).
+  This improvement is possible thanks to the adaptation step in MOM-LASSO.
+
+* **The probability deviation** in (36) is polynomial
+  ( 1/N^{(q_0/2 - 1)} ),
+  whereas it is exponentially small for MOM LASSO.
+  Exponential rates for LASSO hold only if ( \zeta ) is subgaussian
+  ( ( |\zeta|*{L_p} \le C\sqrt{p}|\zeta|*{L_2} ) for all ( p \ge 2 ) ).
+
+* **MOM LASSO is insensitive to data corruption** by up to
+  ( s \log(ed/s) ) outliers, while only one outlier can be responsible for a dramatic breakdown of the performance of LASSO (cf. Figure 1).
+  Moreover, the informative data are only asked to have equivalent ( L^2 ) moments to the one of ( P ) for the MOM LASSO, whereas the properties of the LASSO are only known in the i.i.d. setup.
+
+* **Assumptions on ( X )** are weaker for MOM LASSO than for LASSO.
+  In the LASSO case, we assume that ( X ) is subgaussian whereas for the MOM LASSO we assumed that the coordinates of ( X ) have ( C_0 \log(ed) ) moments and that it satisfies an ( L^2/L^1 ) equivalence assumption.
+
+---
+
+Let us now turn to the **SLOPE** case. The computation of the fixed point functions ( r_Q(\cdot) ) and ( r_M(\cdot) ) rely on [70, Theorem 1.6] and the computation from [51]. Again, the SLOPE norm has a dual norm which is 1-unconditional with respect to the canonical basis of ( \mathbb{R}^d ), [70, Definition 1.4]. Therefore, it follows from [70, Theorem 1.6] that under **Assumption 7**, one has
+
+[
+\mathbb{E} \sup_{v \in \rho B \cap r B_2^d}
+\left| \sum_{i \in [N]} \varepsilon_i \langle v, X_i \rangle \right|
+\le c_2 \sqrt{N},\ell^*(\rho B \cap r B_2^d),
+]
+
+[
+\mathbb{E} \sup_{v \in \rho B \cap r B_2^d}
+\left| \sum_{i \in [N]} \varepsilon_i \zeta_i \langle v, X_i \rangle \right|
+\le c_2 \sigma \sqrt{N},\ell^*(\rho B \cap r B_2^d),
+]
+
+where ( B ) is the unit ball of the SLOPE norm. Local Gaussian mean widths
+( \ell^*(\rho B \cap r B_2^d) ) are bounded from above in [56, Lemma 5.3]:
+
+[
+\ell^*(\rho B \cap r B_2^d) \lesssim \min{C\rho, \sqrt{d},r}
+\quad \text{when } \beta_j = C\sqrt{\log(ed/j)} \text{ for all } j \in [d],
+]
+
+and computations of ( r_M(\cdot) ) and ( r_Q(\cdot) ) follow:
+
+[
+r_Q^2(\rho) \lesssim_L
+\begin{cases}
+0 & \text{if } N \gtrsim_L d, \
+\rho^2/N & \text{otherwise},
+\end{cases}
+\quad \text{and} \quad
+r_M^2(\rho) \lesssim_{L,q_0}
+\begin{cases}
+|\xi|*{L_q}^2, d/N & \text{if } \rho^2 N \gtrsim*{L,q_0} |\xi|*{L_q}^2 d^2, \
+|\xi|*{L_q}, \rho/\sqrt{N} & \text{otherwise}.
+\end{cases}
+]
+
+---
+
+The sparsity equation relative to the SLOPE norm has been solved in **Lemma 4.3** from [51].
+
+**Lemma 8.**
+Let ( 1 \le s \le d ) and set
+[
+B_s = \sum_{j \le s} \beta_j/\sqrt{j}.
+]
+If ( t^* ) is ( \rho/20 )-approximated (relative to the SLOPE norm) by an ( s )-sparse vector and if
+( 40 B_s \le \rho/r(\rho) ), then ( \Delta(\rho) \ge 4\rho/5 ).
+
+For ( \beta_j \le C\sqrt{\log(ed/j)} ), one may verify that
+[
+B_s = \sum_{j \le s} \beta_j/\sqrt{j} \lesssim C\sqrt{s\log(ed/s)}.
+]
+
+Hence, the condition ( B_s \lesssim \rho/r(\rho) ) holds when
+( N \gtrsim_{L,q_0} s \log(ed/s) ) and
+( \rho \gtrsim_{L,q_0} |\xi|_{L_q} \frac{s}{\sqrt{N}} \log(ed/s) ).
+
+Hence, it follows from Lemma 8 that ( \Delta(\rho) \ge 4\rho/5 ) when there is an ( s )-sparse vector in ( t^* + (\rho/20)B_\Psi ); therefore, one may apply Theorem 1 for the choice of the regularization parameter:
+[
+\lambda \sim \frac{r^2(\rho)}{\rho} \sim_{L,q_0} \frac{|\xi|_{L_q}}{\sqrt{N}}.
+]
+
+Now, the final ingredient is to compute the ( \rho_K ) solution to
+[
+K = c, r(\rho_K)^2 N.
+]
+It is straightforward to check that
+[
+\rho_K \sim \frac{K}{\sigma\sqrt{N}}
+\quad \text{and still} \quad
+\lambda \sim \frac{r^2(\rho_K)}{\rho_K} \sim_{L,q_0} \frac{|\xi|_{L_q}}{\sqrt{N}}.
+]
+
+The following result follows from **Theorem 2** together with the computation of
+( \rho^* ), ( \rho_K ), ( r_Q(\cdot) ), ( r_M(\cdot) ) and ( r(\cdot) ) above.
+Its proof is similar to the one of **Theorem 5** and is therefore omitted.
+
+---
+
+**Theorem 6.** *Grant Assumption 6.* The MOM-SLOPE estimator (\hat t) satisfies, with probability at least
+[
+1 - c_1 \exp(-c_2 s \log(ed/s)),
+]
+[
+|\hat t - t^*|*2^2 \le c_3 |\zeta|*{L_{q_0}}^2 , \frac{s}{N} \log!\left(\frac{ed}{s}\right),
+]
+where ((c_j)_{j=1}^3) depends only on (\theta_0, \theta_m) and (q_0).
+
+MOM-SLOPE has the same advantages upon SLOPE as MOM-LASSO upon LASSO. Those improvements are listed below Theorem 5 and will not be repeated. The only difference is that SLOPE, unlike LASSO, already achieves the minimax rate (s \log(ed/s)/N).
+
+---
+
+### C Learning without regularization
+
+All the results from the previous sections also apply in the setup of learning with no regularization which is the framework one should consider when there is no a priori known structure on the oracle.
+
+We consider the learning problem with no regularization. In this setup, we may use both minmaximization or maxminimization estimators
+[
+\hat f_K \in \arg\min_{f \in F} \sup_{g \in F} T_K(g,f)
+\quad \text{and} \quad
+\hat g_K \in \arg\max_{g \in F} \inf_{f \in F} T_K(g,f)
+\tag{41}
+]
+where
+[
+T_K(g,f) = \text{MOM}_K(\ell_f - \ell_g).
+]
+
+We show below that (\hat f_K) and (\hat g_K) are efficient procedures even in situations where the dataset is corrupted by outliers. The case (K=1) corresponds to the classical ERM:
+[
+\hat f_1 = \hat g_1 \in \arg\min_{f \in F} P_N \ell_f
+]
+which can only be trusted when used with a “clean dataset”.
+
+Indeed, the ideal setup for ERM is the subgaussian (and convex) framework: that is for a convex class (F) of functions, i.i.d. data ((X_i,Y_i)*{i=1}^N) having the same distribution as ((X,Y)) and such that for some (L>0) and all (f,g \in F),
+[
+|Y|*{\psi_2} < \infty
+\quad \text{and} \quad
+|g(X) - f(X)|*{\psi_2} \le L |g(X) - f(X)|*{L_2}.
+\tag{42}
+]
+
+When (F) satisfies the right-hand side of (42), we say that (F) is an (L)-subgaussian class. It is proved in [53] that in this setup the ERM is an optimal minimax procedure (cf. Theorem A′ from [53] recalled in Theorem 9 below).
+
+But first, we need a version of the two theorems 1 and 2 valid for (\hat f_K) and (\hat g_K) (that is for the learning problem with no regularization). Let us first introduce the set of assumptions we use and for the sake of shortness we consider the simplification introduced in Remark 2. Then, we will introduce the two fixed points driving the statistical properties of (\hat f_K) and (\hat g_K).
+
+---
+
+**Assumption 8.** For all (i \in \mathcal I) and (f \in F),
+[
+|f(X_i) - f^*(X_i)|_{L_2} = |f(X) - f^*(X)|*{L_2},
+]
+[
+|Y_i - f(X_i)|*{L_2} = |Y - f(X)|*{L_2},
+]
+[
+\operatorname{var}((Y - f^*(X))(f(X) - f^*(X))) \le \theta_m^2 |f(X) - f^*(X)|*{L_2}^2,
+]
+and
+[
+|f(X_i) - f^*(X_i)|_{L_2} \le \theta_0 |f(X_i) - f^*(X_i)|_{L_1}.
+]
+
+The two fixed points associated to this problem are (r_Q(\rho,\gamma_Q)) and (r_M(\rho,\gamma_M)) as in Definition 5 for (\rho=\infty):
+
+[
+r_Q(\gamma_Q)
+= \inf \left{
+r>0 : \forall J \subset \mathcal I,\ |J| \ge \frac{N}{2},\
+\mathbb E \sup_{\substack{f \in F:\ |f-f^*|*{L_2}\le r}}
+\left|\sum*{i\in J} \varepsilon_i (f-f^*)(X_i)\right|
+\le \gamma_Q |J| r
+\right},
+]
+
+[
+r_M(\gamma_M)
+= \inf \left{
+r>0 : \forall J \subset \mathcal I,\ |J| \ge \frac{N}{2},\
+\mathbb E \sup_{\substack{f \in F:\ |f-f^*|*{L_2}\le r}}
+\left|\sum*{i\in J} \varepsilon_i \zeta_i (f-f^*)(X_i)\right|
+\le \gamma_M |J| r^2
+\right},
+]
+
+and let
+[
+r^* = r^*(\gamma_Q,\gamma_M) = \max{r_Q(\gamma_Q), r_M(\gamma_M)}.
+]
+
+---
+
+**Theorem 7.** *Grant Assumptions 8* and let ( r_Q(\gamma_Q) ), ( r_M(\gamma_M) ) and ( r^* ) be defined as above for
+[
+\gamma_Q = (384\theta_0)^{-1}, \qquad \gamma_M = \varepsilon/192 \quad \text{and} \quad \varepsilon = 1/(32\theta_0^2).
+]
+Assume that ( N \ge 384\theta_0^2 ) and ( |\mathcal O| \le N/(768\theta_0^2) ).
+Let ( K^* ) denote the smallest integer such that
+[
+K^* \ge \frac{N\varepsilon^2 (r^*)^2}{384\theta_0^2}.
+]
+Then, for all
+[
+K \in [\max(K^*, 8|\mathcal O|),, N/(96\theta_0^2)],
+]
+with probability larger than ( 1 - 2\exp(-7K/9216) ), the estimators
+( \hat f_K ) and ( \hat g_K ) defined in (41) satisfy
+[
+|\hat g_K - f^*|_{L_P^2}, \ |\hat f_K - f^*|_{L_P^2}
+\le \frac{\theta_m}{\varepsilon} \sqrt{\frac{384K}{N}},
+]
+and
+[
+R(\hat g_K), R(\hat f_K)
+\le R(f^*) + (1 + 2\varepsilon)\frac{384\theta_m^2 K}{\varepsilon^2 N}.
+]
+
+Moreover, one can choose adaptively ( K ) via Lepski’s method.
+We will do it only for the maxmin estimators ( \hat g_K ).
+Similar results hold for the minmax estimators ( \hat f_K ) from straightforward modifications (the same as in Section 3.4.1).
+
+Define the confidence regions: for all ( J \in [K] ) and ( g \in F ),
+[
+\hat R_J
+= \left{ g \in F : \sigma_J(g) \ge -\frac{384\theta_m^2 J}{\varepsilon N} \right},
+\quad \text{where} \quad
+\sigma_J(g) = \inf_{f \in F} T_J(g,f),
+]
+and
+[
+T_J(g,f) = \text{MOM}_J(\ell_f - \ell_g)
+\quad \text{for all } f,g \in F.
+]
+
+Next, for all
+[
+J \in [\max(K^*, 8|\mathcal O|),, N/(96\theta_0^2)],
+]
+let
+[
+\hat K
+= \inf \left{
+K \in [\max(K^*, 8|\mathcal O|),, N/(96\theta_0^2)] :
+\bigcap_{J=K}^{K_2} \hat R_J \neq \varnothing
+\right}
+\quad \text{and} \quad
+\hat g \in \bigcap_{J=\hat K}^{K_2} \hat R_J .
+]
+
+The following theorem shows the performance of the resulting estimator.
+
+---
+
+**Theorem 8.** *Grant Assumption 8.*
+For ( \varepsilon = 1/(32\theta_0^2) ) and all
+[
+K \in [\max(K^*, 8|\mathcal O|),, N/(96\theta_0^2)],
+]
+with probability larger than ( 1 - 2\exp(-K/2304) ),
+[
+|\hat g - f^*|_{L_P^2}
+\le \frac{\theta_m}{\varepsilon}\sqrt{\frac{384K}{N}},
+\qquad
+R(\hat g)
+\le R(f^*) + (1 + 2\varepsilon)\frac{384\theta_m^2 K}{\varepsilon^2 N}.
+]
+
+The proofs of Theorems 7 and 8 essentially follow the one of Theorems 1 and 2.
+We will only sketch the proof for the maxmin estimator ( \hat g_K ) given that we already studied the minmax estimators in the regularized setup in Section 4.
+
+---
+
+**Proof of Theorem 7.**
+It follows from Lemma 1 and Lemma 2 for ( \rho = \infty ) that there exists an event ( \Omega(K) ) such that
+[
+\mathbb P(\Omega(K)) \ge 1 - 2\exp(-7K/9216)
+]
+and, on ( \Omega(K) ), for all ( f \in F ),
+
+1. if ( |f - f^*|*{L_P^2} \ge r_Q(\gamma_Q) ), then
+   [
+   Q*{1/4,K}\big((f - f^*)^2\big)
+   \ge \frac{1}{(4\theta_0)^2}|f - f^*|_{L_P^2}^2 ,
+   \tag{43}
+   ]
+
+2. there exist ( 3K/4 ) blocks ( B_k ) with ( k \in \mathcal K ), for which
+   [
+   \big|(P_{B_k} - \bar P_{B_k})[2\zeta(f - f^*)]\big|
+   \le \varepsilon \max!\left(
+   r_M^2(\gamma_M),
+   \frac{384\theta_m^2 K}{\varepsilon^2 N}|f - f^*|_{L_P^2}^2
+   \right).
+   \tag{44}
+   ]
+
+Moreover, it follows from Assumption 8 that for all ( k \in \mathcal K ),
+[
+\bar P_{B_k}[\zeta(f - f^*)] = P[\zeta(f - f^*)]
+\quad \text{and} \quad
+P[2\zeta(f - f^*)] \le 0
+]
+because of the convexity of ( F ) and the nearest point theorem.
+Therefore, on the event ( \Omega(K) ), for all ( f \in F ),
+[
+Q_{3/4,K}\big(2\zeta(f - f^*)\big)
+\le \varepsilon \max!\left(
+r_M^2(\gamma_M),
+\frac{384\theta_m^2 K}{\varepsilon^2 N}|f - f^*|_{L_P^2}^2
+\right),
+\tag{45}
+]
+and
+[
+\begin{aligned}
+P[-2\zeta(f - f^*)]
+&\le P_{B_k}[-2\zeta(f - f^*)]
+
+* \varepsilon \max!\left(
+  r_M^2(\gamma_M),
+  \frac{384\theta_m^2 K}{\varepsilon^2 N}|f - f^*|*{L_P^2}^2
+  \right) \
+  &\le Q*{1/4,K}!\big((f - f^*)^2 - 2\zeta(f - f^*)\big)
+* \varepsilon \max!\left(
+  r_M^2(\gamma_M),
+  \frac{384\theta_m^2 K}{\varepsilon^2 N}|f - f^*|_{L_P^2}^2
+  \right) \
+  &\le T_K(f^*, f)
+* \varepsilon \max!\left(
+  r_M^2(\gamma_M),
+  \frac{384\theta_m^2 K}{\varepsilon^2 N}|f - f^*|_{L_P^2}^2
+  \right).
+  \end{aligned}
+  \tag{46}
+  ]
+
+---
+
+Let us place ourselves on the event (\Omega(K)) and let (r_K) be such that
+[
+r_K^2 = \frac{384\theta_m^2 K}{\varepsilon^2 N}.
+]
+Given that (r_K \ge r^*), it follows from (43) and (45) that if (f \in F) is such that
+[
+|f - f^*|*{L_P^2} \ge r_K
+]
+then
+[
+T_K(f,f^*) \le Q*{3/4,K}(2\zeta(f - f^*)) - Q_{1/4,K}((f - f^*)^2)
+\le \left(\varepsilon - \frac{1}{16\theta_0^2}\right)|f - f^*|_{L_P^2}^2
+\le -\frac{1}{32\theta_0^2}|f - f^*|_{L_P^2}^2.
+\tag{47}
+]
+
+For (\varepsilon = 1/(32\theta_0^2)) and if (|f - f^*|_{L_P^2} \le r_K), then
+[
+T_K(f,f^*) \le Q_{3/4,K}(2\zeta(f - f^*)) \le \varepsilon r_K^2.
+]
+
+In particular,
+[
+\sigma_K(f^*) = \inf_{f \in F} T_K(f^*,f)
+= -\sup_{f \in F} T_K(f,f^*)
+\ge -\varepsilon r_K^2.
+]
+
+Since (\sigma_K(\hat g_K) \ge \sigma_K(f^*)), one has
+[
+\sigma_K(\hat g_K) \ge -\varepsilon r_K^2.
+]
+On the other hand, we have
+[
+\sigma_K(\hat g_K) = \inf_{f \in F} T_K(\hat g_K,f) \le T_K(\hat g_K,f^*).
+]
+Therefore,
+[
+T_K(\hat g_K,f^*) \ge -\varepsilon r_K^2.
+]
+
+But we know from (47) that if (g \in F) is such that
+[
+|g - f^*|_{L_P^2} > \sqrt{32},\theta_0 r_K,
+]
+then
+[
+T_K(g,f^*) \le -\frac{1}{32\theta_0^2}|g - f^*|_{L_P^2}^2 < -\varepsilon r_K^2.
+]
+Therefore, one necessarily has
+[
+|\hat g_K - f^*|_{L_P^2} \le \sqrt{32},\theta_0 r_K = r_K.
+]
+
+The oracle inequality now follows from (46):
+[
+\begin{aligned}
+R(\hat g_K) - R(f^*)
+&= |\hat g_K - f^*|_{L_P^2}^2 + P[-2\zeta(\hat g_K - f^*)] \
+&\le r_K^2 + T_K(f^*,\hat g_K) + \varepsilon r_K^2
+\le (1 + 2\varepsilon) r_K^2.
+\end{aligned}
+]
+(\blacksquare)
+
+---
+
+**Proof of Theorem 8.**
+Consider the same notations as in the proof of Theorem 7 and denote
+[
+K_2 = \frac{N}{96\theta_0^2}.
+]
+It follows from the proof of Theorem 7 that with probability larger than
+[
+1 - 2\sum_{J=K}^{K_2} \exp(-7J/9216),
+]
+for all (J \in [K,K_2]),
+[
+\sigma_J(f^*) \ge -\varepsilon r_J^2,
+]
+therefore (f^* \in \hat R_J) and so (\hat K \le K).
+The latter implies that (\hat g \in \hat R_K), which by using the same argument as in the end of the proof of Theorem 7 implies that
+[
+|\hat g - f^*|_{L_P^2} \le r_K
+]
+and then
+[
+R(\hat g) - R(f^*) \le (1 + 2\varepsilon) r_K^2.
+]
+(\blacksquare)
+
+---
+
+**Example: Ordinary least squares.**
+Let us consider the case where
+[
+F = {\langle \cdot , t \rangle : t \in \mathbb R^d}
+]
+is the set of all linear functionals indexed by (\mathbb R^d).
+We assume that for all (i \in \mathcal I) and (t \in \mathbb R^d),
+
+1. (\mathbb E\langle X_i,t\rangle^2 = \mathbb E\langle X,t\rangle^2),
+
+2. (\mathbb E(Y_i - \langle X_i,t\rangle)^2 = \mathbb E(Y - \langle X,t\rangle)^2),
+
+3. (\mathbb E(Y - \langle X,t^*\rangle)^2 \langle X,t\rangle^2
+   \le \theta_m^2 \mathbb E\langle X,t\rangle^2),
+
+4. (\sqrt{\mathbb E\langle X,t\rangle^2} \le \theta_0 \mathbb E|\langle X,t\rangle|.)
+
+Let us now compute the fixed points (r_Q(\gamma_Q)) and (r_M(\gamma_M)).
+The proof essentially follows from Example 1 in [45].
+
+Let (J \subset \mathcal I) be such that (|J| \ge N/2).
+Denote by (V \subset \mathbb R^d) the smallest linear span containing almost surely (X).
+Let (\varphi_1,\ldots,\varphi_D) be an orthonormal basis of (V) with respect to the Hilbert norm
+[
+|t| = \sqrt{\mathbb E\langle X,t\rangle^2}.
+]
+
+It follows from the Cauchy–Schwarz inequality that
+[
+\begin{aligned}
+\mathbb E \sup_{f \in F:|f-f^*|*{L_P^2}\le r}
+\left|\sum*{i\in J} \varepsilon_i (f - f^*)(X_i)\right|
+&= \mathbb E \sup_{\sum_{j=1}^D \theta_j^2 \le r^2}
+\left|\sum_{j=1}^D \theta_j \sum_{i\in J} \varepsilon_i \langle X_i,\varphi_j\rangle\right| \
+&\le r ,\mathbb E \left(\sum_{j=1}^D
+\left(\sum_{i\in J} \varepsilon_i \langle X_i,\varphi_j\rangle\right)^2\right)^{1/2} \
+&\le r \sqrt{\sum_{j=1}^D \sum_{i\in J} \mathbb E\langle X_i,\varphi_j\rangle^2}
+= r \sqrt{D|J|}.
+\end{aligned}
+]
+
+As a consequence,
+[
+r_Q(\gamma_Q) = 0 \quad \text{if} \quad \gamma_Q |J| \ge \sqrt{D|J|},
+\quad \text{i.e. if} \quad \gamma_Q \ge \sqrt{D/|J|}.
+]
+
+Using the same arguments as above, we have
+[
+\mathbb E \sup_{f \in F:|f-f^*|*{L_P^2}\le r}
+\left|\sum*{i\in J} \varepsilon_i \zeta_i (f - f^*)(X_i)\right|
+\le r \sqrt{\sum_{j=1}^D \sum_{i\in J} \mathbb E \zeta_i^2 \langle X_i,\varphi_j\rangle^2}
+\le r \theta_m \sqrt{D|J|}.
+]
+
+---
+
+Therefore,
+[
+r_M(\gamma_M) \le \frac{\theta_m}{\gamma_M}\sqrt{\frac{D}{|J|}}
+\le \frac{\theta_m}{\gamma_M}\sqrt{\frac{2D}{N}}
+\quad \text{and} \quad
+K^* = D.
+]
+
+Now, it follows from Theorem 8 that if
+[
+N \ge 2(384\theta_0)^2 D
+\quad \text{and} \quad
+|\mathcal O| \le \frac{N}{768\theta_0^2},
+]
+then the MOM OLS with adaptively chosen number of blocks (K) is such that for all
+[
+K \in [\max(D,8|\mathcal O|),, N/(96\theta_0^2)],
+]
+with probability at least (1 - 2\exp(-K/2304)),
+[
+\sqrt{\mathbb E\langle \hat t - t^*, X\rangle^2}
+\le \frac{\theta_m}{\varepsilon}\sqrt{\frac{384K}{N}}.
+\tag{48}
+]
+
+A consequence of (48) is that if the number of outliers is less than (D/8) then the MOM OLS recovers the classical (D/N) rate of convergence for the mean square error.
+This happens with probability at least (1 - 2\exp(-D/2304)), that is with an exponentially large probability.
+
+This is a remarkable fact given that we only made assumptions on the (L^2) moments of the design (X).
+Moreover, this result is obtained under the only assumption on the informative data that they have equivalent (L^2) moments to the one of the distribution of interest (P).
+Therefore, only very little information on (P) needs to be brought to the statistician via the data; moreover those data can be corrupted up to (D/8) complete outliers.
+
+Finally, note that we did not assume isotropicity of the design (X) to obtain (48).
+Therefore, (48) holds even for very degenerate design (X) and the price we pay is the true dimension of (X), that is of the dimension of the smallest linear span containing almost surely (X), not the one of the whole space (\mathbb R^d).
+
+---
+
+### D Minimax optimality of Theorem 1, 2, 7 and 8
+
+The aim of this section is to show that the rates obtained in Theorems 1, 2, 7 and 8 are optimal in a minimax sense.
+To that end we recall a minimax lower bound result from [53].
+
+**Theorem 9** *(Theorem A′ in [53]).*
+There exists an absolute constant (c_0) for which the following holds.
+Let (X) be a random variable taking values in (\mathcal X).
+Let (F) be a class of functions such that (\mathbb E f^2(X) < \infty).
+Assume that (F) is star-shaped around one of its points (i.e. there exists (f_0 \in F) such that for all (f \in F) the segment ([f_0,f]) belongs to (F)).
+Let (\zeta) be a centered real-valued Gaussian variable with variance (\sigma) independent of (X), and for all (f^* \in F) denote by (Y^{f^*}) the target variable
+[
+Y^{f^*} = f^*(X) + \zeta .
+\tag{49}
+]
+
+Let (0 < \delta_N < 1) and (r_N^2 > 0).
+Let (\hat f_N) be a statistic (i.e. a measurable function from ((\mathcal X \times \mathbb R)^N) to (L^2(P_X)) where (P_X) is the probability distribution of (X)).
+Assume that (\hat f_N) is such that for all (f^* \in F), with probability at least (1 - \delta_N),
+[
+|\hat f_N(\mathcal D) - f^*|_{L_P^2}^2
+= R(\hat f_N(\mathcal D)) - R(f^*)
+\le r_N^2 ,
+]
+where
+[
+\mathcal D = {(X_i,Y_i) : i \in [N]}
+]
+is a set of (N) i.i.d. copies of ((X,Y^{f^*})).
+
+Then, necessarily, one has
+[
+r_N^2 \ge
+\min!\left(
+c_0\sigma^2 \frac{\log(1/\delta_N)}{N},
+\ \frac{1}{4}\operatorname{diam}(F,L^2(P_X))
+\right),
+]
+where (\operatorname{diam}(F,L^2(P_X))) denotes the (L^2(P_X)) diameter of (F).
+
+Theorem 9 proves that if the statistical model (49) holds then there is a strong connection between the deviation parameter (\delta_N) and the uniform rate of convergence (r_N^2) over (F): the smaller (\delta_N), the larger (r_N^2).
+We now use this result to prove that Theorems 1, 2, 7 and 8 are essentially optimal.
+
+In Theorems 7 and 8, the deviation bounds are (1 - c_1\exp(-c_2K)) and the residual terms in the (L_P^2) (to the square) estimation rates are like (c_3 K/N).
+Therefore, setting (\delta_N = c_1 \exp(-c_2 K)), then Theorem 9 proves that no procedure can do better than
+[
+\min!\left(
+c_0\sigma^2 \frac{\log(1/\delta_N)}{N},
+\ \frac{1}{4}\operatorname{diam}(F,L^2(P_X))
+\right)
+=======
+
+\min!\left(
+c_4\sigma^2 \frac{K}{N},
+\ \frac{1}{4}\operatorname{diam}(F,L^2(P_X))
+\right).
+]
+
+---
+
+Given that one can obviously bound from above the performance of (\hat f_K) and (\hat g_K) as well as those of (\hat f) and (\hat g) in Theorems 7 and 8 by the (L_P^2)-diameter of (F) (because (f^*) and those estimators are in (F)), then the result of Theorems 7 and 8 are optimal even in the very strong Gaussian setup with i.i.d. data satisfying a Gaussian regression model like (49).
+
+The remarkable point is that Theorems 7 and 8 have been obtained under much weaker assumptions than those considered in Theorem 9 since outliers may corrupt the dataset, the noise and the design do not have to be independent, the informative data are only assumed to have a (L^2) norm equivalent to the one of (P) and may therefore be heavy tailed.
+
+Given the form of the deviation bounds in Theorems 1 and 2 and given that (r(\rho_K) \sim K/N) and that (r(2\rho_K) \sim K/N) (if one assumes a weak regularity assumption on the class (F)) then the same conclusions hold for Theorems 1 and 2: there is no procedure doing better than the MOM estimators even in the very good framework of Theorem 9.
