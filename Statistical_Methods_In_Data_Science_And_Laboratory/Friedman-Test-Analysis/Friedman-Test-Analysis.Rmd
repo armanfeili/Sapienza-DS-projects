@@ -1,0 +1,1353 @@
+---
+title: "Stat4DS | THE Homework | Part 1 + 2 + 3"
+author: "Arman Feili"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+set.seed(123)  # for reproducibility
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(gridExtra)  # optional, for multi-plot layouts
+```
+
+---
+
+This file contains both [Homework Part 1](#part1) and [Homework Part 2+3](#part2-3).
+
+## Author:
+
+Arman Feili, 2101835, feili.2101835@studenti.uniroma1.it
+
+---
+
+# Homework: Part 1 {#part1}
+
+## Question - 1
+
+#### 1. Find (with pen and paper) the Bayes classification rule \( \eta^\star(x) \).
+
+## Answer - 1
+
+We have a binary response \(Y \in \{0,1\}\) and a single real predictor \(X\). The data come from:
+
+- \(X \mid Y=0 \sim \text{Uniform}(-3,1)\)
+- \(X \mid Y=1 \sim \text{Uniform}(-1,3)\)
+
+And both classes are equally likely (\(\mathbb{P}(Y=0) = \mathbb{P}(Y=1) = 1/2\)). We want to figure out the Bayes classification rule, \(\eta^\star(x)\), by comparing the class-conditional densities.
+
+---
+
+Now, we write down the Conditional Densities
+
+1. When \(Y=0\)  
+   \(X\mid Y=0\) is uniform on \([-3,1]\), so its density is
+   \[
+     f_0(x) = \begin{cases}
+       \tfrac{1}{4}, & -3 \le x \le 1, \\
+       0, & \text{otherwise}.
+     \end{cases}
+   \]
+
+2. When \(Y=1\)  
+   \(X\mid Y=1\) is uniform on \([-1,3]\), so its density is
+   \[
+     f_1(x) = \begin{cases}
+       \tfrac{1}{4}, & -1 \le x \le 3, \\
+       0, & \text{otherwise}.
+     \end{cases}
+   \]
+
+Because both classes are equally likely (\(\pi_0 = \pi_1 = 1/2\)), to decide whether \(X\) comes from class 0 or class 1, we compare:
+\[
+  f_0(x) \quad \text{vs.} \quad f_1(x).
+\]
+
+---
+
+We look at where \(f_0(x)\) and \(f_1(x)\) differ to compare the densities on each interval:
+
+1. \(x < -3\)  
+   Both \(f_0(x)\) and \(f_1(x)\) are 0 here, so there’s no data anyway. If a point did fall there (theoretically), we can label it 0 or 1—it won’t matter.
+
+2. \(-3 \le x < -1\)  
+   Here, \(f_0(x) = 1/4\) and \(f_1(x) = 0\). Since \(f_0\) is bigger, we classify as 0.
+
+3. \(-1 \le x \le 1\)  
+   In this region, \(f_0(x) = 1/4\) and \(f_1(x) = 1/4\). They’re exactly equal, which means it’s a tie. In theory, we can choose 0 or 1 however we want in this interval without changing the overall error rate. (Some people break the tie by picking 0 for \(-1 \le x < 0\) and 1 for \(0 \le x \le 1\), but any consistent choice is fine.)
+
+4. \(1 < x \le 3\)  
+   Now \(f_0(x) = 0\) and \(f_1(x) = 1/4\), so class 1 is more likely.
+
+5. \(x > 3\)  
+   Same situation as \(x < -3\); both densities are 0, so no real data lands here.
+
+If we put it all together we have:
+
+\[
+  \eta^\star(x) = 
+    \begin{cases}
+      0, & x < -1, \\
+      \text{(any 0 or 1)}, & -1 \le x \le 1, \\
+      1, & x > 1.
+    \end{cases}
+\]
+This rule exactly matches the idea that if \(f_1(x) > f_0(x)\), pick 1; if \(f_0(x) > f_1(x)\), pick 0; and if they’re equal, pick either.
+
+---
+
+#### Example of an R Implementation
+
+If we want a concrete R function that always picks 0 in the tie region \([-1,1]\), we could write:
+
+```{r}
+eta_star <- function(x) {
+  if (x < -1) {
+    return(0)
+  } else if (x > 1) {
+    return(1)
+  } else {
+    # tie region: pick 0
+    return(0)
+  }
+}
+
+# Try a few values:
+xs <- c(-2, 0, 2)
+sapply(xs, eta_star)
+```
+
+But we could also decide to pick 1 when \(x\) is nonnegative, etc. Either way, the error rate stays the same as long as \(-1 \le x \le 1\) is handled consistently.
+
+---
+
+#### Shorter Version
+
+Since \(\pi_0 = \pi_1\) and each class’s density is \(\tfrac14\) on its respective range, we just look at where those ranges overlap. Concretely:
+
+- For \(x < -1\), we have \(f_1(x) = 0\) and \(f_0(x) = 1/4\), so pick class 0.
+- For \(-1 < x \le 3\), \(f_1(x) = 1/4\) is at least as big as \(f_0(x)\), so pick class 1.
+- At \(x = -1\), they are tied, so either class is fine.
+
+A simple way to write it is:
+\[
+  \eta^\star(x) =
+    \begin{cases}
+      0, & x < -1,\\
+      0 \text{ or } 1, & x = -1,\\
+      1, & x > -1.
+    \end{cases}
+\]
+Any tie-breaking in that middle boundary leads to the same optimal error rate.
+
+## Question - 2
+
+#### 2. Simulate \( n = 1000 \) data from the joint data model \( p(y, x) = p(x \mid y) \cdot p(y) \) described above, and then:
+
+   - Plot the data (or a subset for clarity) together with the regression function \( r(x) \) that defines \( \eta^\star(x) \).
+   - Evaluate the performance of the Bayes Classifiers \( \eta^\star(x) \) on this simple (only 1 feature!) data.
+   - Apply any other practical classifier of your choice to these data and comparatively comment on its performance (with respect to those of the Bayes classifiers). Of course, the \( n \) training data should be used for training and validation too (in case there are tuning parameters).
+
+
+## Answer - 2:
+
+We wanted to see how the Bayes classifier (which we derived in Question 1) actually performs on real (simulated) data and compare it with a more familiar classifier, like logistic regression.
+
+1. Generate \(n=1000\) points \(\{(Y_i, X_i)\}\) under the given distribution.  
+2. Plot these points and overlay the regression function \(r(x)\).  
+3. Check how well the Bayes rule \(\eta^\star\) classifies those 1000 data points.
+4. Fit a logistic regression on the same data and compare its performance to the Bayes rule.
+
+
+We know:
+  \[
+    \mathbb{P}(Y=0) \;=\; \mathbb{P}(Y=1) \;=\; \frac{1}{2}.
+  \]
+  \[
+    X \mid Y=0 \;\sim\; \mathrm{Unif}(-3, \,1), 
+    \quad
+    X \mid Y=1 \;\sim\; \mathrm{Unif}(-1, \,3).
+  \]
+
+Hence, the joint distribution is
+\[
+  p(y,x) \;=\; p(x \mid y)\cdot p(y).
+\]
+
+---
+
+#### Simulate the Data
+
+```{r simulate-data}
+n <- 1000
+
+# Generate Y (0 or 1) with equal probability
+Y <- rbinom(n, size = 1, prob = 0.5)  # 0 or 1, each with prob 0.5
+
+# Allocate a vector for X
+X <- numeric(n)
+
+# For each observation, draw X from the correct uniform range
+n0 <- sum(Y == 0)
+n1 <- sum(Y == 1)
+
+# X | Y=0 ~ Unif(-3,1)
+X[Y == 0] <- runif(n0, min = -3, max = 1)
+
+# X | Y=1 ~ Unif(-1,3)
+X[Y == 1] <- runif(n1, min = -1, max = 3)
+
+# Combine into a data frame
+sim_data <- data.frame(X = X, Y = factor(Y))  # Make Y a factor for plotting
+```
+
+#### Quick Summary of the Simulated Data
+```{r summary-data}
+summary(sim_data)
+```
+
+A quick `summary(sim_data)` confirms that we have 1000 observations with \(X\) in the correct ranges and roughly half of them labeled 0 or 1.
+
+---
+
+#### Plotting the Data and the Regression Function \(r(x)\)
+
+The regression function tells us the probability that \( Y = 1 \) given a specific value of \( X \). In this case, we can calculate it using:
+
+\[
+  r(x) = \mathbb{P}(Y=1 \mid X=x) 
+       = \frac{\pi_1 \, f_1(x)}{\pi_0 \, f_0(x) + \pi_1 \, f_1(x)}
+\]
+
+where:
+- \(\pi_0 = \mathbb{P}(Y=0) = 0.5\),
+- \(\pi_1 = \mathbb{P}(Y=1) = 0.5\),
+- \( f_0(x) = \frac{1}{4} \) if \( x \in [-3,1] \), otherwise 0,
+- \( f_1(x) = \frac{1}{4} \) if \( x \in [-1,3] \), otherwise 0.
+
+Breaking it down case by case:
+
+- For \( x < -3 \) or \( x > 3 \): Both \( f_0(x) \) and \( f_1(x) \) are 0, so \( r(x) \) is undefined since there's no probability mass there.  
+- For \( -3 \leq x < -1 \): Here, \( f_0(x) = 1/4 \) and \( f_1(x) = 0 \), so the probability of \( Y=1 \) is 0.  
+- For \( -1 \leq x \leq 1 \): Both densities are \( 1/4 \), so the probability of \( Y=1 \) is \( \frac{1/4}{1/4 + 1/4} = 0.5 \).  
+- For \( 1 < x \leq 3 \): Here, \( f_0(x) = 0 \) and \( f_1(x) = 1/4 \), meaning \( r(x) = 1 \).  
+
+So, the function follows this step pattern:
+
+\[
+  r(x) =
+    \begin{cases}
+      0 & \text{if } -3 \leq x < -1, \\
+      0.5 & \text{if } -1 \leq x \leq 1, \\
+      1 & \text{if } 1 < x \leq 3, \\
+      \text{undefined} & \text{otherwise}.
+    \end{cases}
+\]
+
+Since this function is piecewise, it looks like a step function with three distinct regions. Our next step is to visualize it along with the simulated data.
+
+#### Visualizing the Data and \( r(x) \)
+
+To get a better idea of how our data is distributed and how the regression function \( r(x) \) behaves, we created a plot. 
+
+- We used a histogram to show the distribution of \( X \) values for both classes (\( Y = 0 \) and \( Y = 1 \)).  
+- Then, we overlaid the step function representing \( r(x) \), which tells us the probability of \( Y = 1 \) at each point \( X \).  
+
+Here's the R code we used:
+
+```{r plot-data, echo=FALSE, message=FALSE, warning=FALSE}
+library(ggplot2)
+
+# For a clearer plot, we can use a subset of points:
+plot_df <- sim_data[sample(seq_len(nrow(sim_data)), size = 300), ]
+
+# Create a data frame for r(x)
+r_x <- seq(-3, 3, length.out = 400)
+r_val <- sapply(r_x, function(x) {
+  if (x < -1) {
+    return(0)
+  } else if (x <= 1) {
+    return(0.5)
+  } else {
+    return(1)
+  }
+})
+
+r_data <- data.frame(x = r_x, r_of_x = r_val)
+
+ggplot(plot_df, aes(x = X, color = Y)) +
+  geom_histogram(aes(y = ..density.., fill = Y), 
+                 alpha = 0.4, position = "identity", 
+                 bins = 30) +
+  geom_line(data = r_data, aes(x = x, y = r_of_x), 
+            color = "black", size = 1.2) +
+  theme_minimal(base_size = 14) +
+  labs(title = "Histogram of Simulated X by Class (Y=0 or Y=1)",
+       subtitle = "Black line shows r(x) = P(Y=1 | X=x)",
+       x = "X", y = "Density / Probability") +
+  scale_fill_discrete(name = "Y (Class)") +
+  scale_color_discrete(name = "Y (Class)")
+```
+
+#### What This Plot Shows:
+- We split the histogram into two colors: red for \( Y = 0 \) and blue for \( Y = 1 \), so we can see how the values of \( X \) are distributed for each class.  
+- The black step function represents \( r(x) = \mathbb{P}(Y = 1 \mid X = x) \), which tells us the probability of \( Y = 1 \) at each \( X \).  
+- We can see that \( r(x) \) is 0 for \( x < -1 \), 0.5 for \(-1 \leq x \leq 1\), and 1 for \( x > 1 \), which matches our earlier calculations.  
+- Most of the red bars (class 0) are on the left, and most of the blue bars (class 1) are on the right, which makes sense given how the data was generated.  
+- In the middle region \(-1 \leq x \leq 1\), both classes overlap equally, so the probability of \( Y = 1 \) is exactly 0.5.
+
+---
+
+#### Evaluating the Bayes Classifier
+
+Recall that the theoretical Bayes rule \(\eta^\star\) is:
+\[
+  \eta^\star(x) = 
+    \begin{cases}
+       0, & x < -1, \\
+       \text{0 or 1}, & -1 \le x \le 1, \\
+       1, & x > 1.
+    \end{cases}
+\]
+We still have to choose how to label points in the tie region \([-1,1]\). One simple approach is:
+- Class 0 if \(-1 \le x < 0\)
+- Class 1 if \(0 \le x \le 1\)
+
+Below is an R function that implements this piecewise rule:
+
+```{r define-bayes}
+bayes_classifier <- function(x) {
+  # If x < -1 => Class 0
+  # If x > 1  => Class 1
+  # If -1 <= x < 0 => Class 0
+  # If 0 <= x <= 1 => Class 1
+  
+  if (x < -1) {
+    return(0)
+  } else if (x > 1) {
+    return(1)
+  } else {
+    # tie region: let's pick 0 for x < 0, 1 for x >= 0
+    if (x < 0) {
+      return(0)
+    } else {
+      return(1)
+    }
+  }
+}
+```
+
+We now apply `bayes_classifier()` to each \(X_i\) in our dataset and compare to the true label \(Y_i\).
+
+```{r bayes-performance}
+bayes_preds <- sapply(sim_data$X, bayes_classifier)  # numeric 0/1
+bayes_preds_factor <- factor(bayes_preds, levels = c(0,1))
+
+# Create confusion matrix
+bayes_cm <- table(
+  Predicted = bayes_preds_factor,
+  Actual = sim_data$Y
+)
+bayes_cm
+```
+
+Let's calculate misclassification rate:
+
+```{r bayes-error}
+bayes_misclass <- mean(bayes_preds_factor != sim_data$Y)
+cat("Bayes Classifier Misclassification Rate:", bayes_misclass, "\n")
+```
+
+#### Training Another Practical Classifier
+
+As an example, let’s train a logistic regression model on these same data, then predict on the same data (since we have no separate test set).
+
+```{r logistic-fit}
+glm_fit <- glm(Y ~ X, data = sim_data, family = binomial)
+summary(glm_fit)
+```
+
+- Get predicted probabilities \(\hat{p}_i = \hat{\mathbb{P}}(Y=1 \mid X_i)\).
+- Convert to predicted class via a 0.5 threshold.
+
+```{r logistic-predict}
+prob_hat <- predict(glm_fit, newdata = sim_data, type = "response")
+logistic_preds <- ifelse(prob_hat >= 0.5, 1, 0)
+logistic_preds_factor <- factor(logistic_preds, levels = c(0,1))
+
+# Confusion matrix
+logistic_cm <- table(
+  Predicted = logistic_preds_factor,
+  Actual = sim_data$Y
+)
+logistic_cm
+
+# Misclassification rate
+logistic_misclass <- mean(logistic_preds_factor != sim_data$Y)
+cat("Logistic Regression Misclassification Rate:", logistic_misclass, "\n")
+```
+
+#### Conclusions
+
+- We successfully simulated data from the specified uniform distributions with equal class priors.  
+- We confirmed that the Bayes Classifier function is the optimal decision rule and computed its misclassification rate on the sampled data.  
+- By fitting other Classifier (Logistic Regression) model, we noted its performance is similar but typically slightly worse than the Bayes rule.
+- On these 1D uniform data, both methods end up with fairly good performance. For more complicated distributions or more features, differences can become larger.  
+- When we actually know the underlying distributions, the Bayes rule is unbeatable. Logistic regression is a decent practical guess when you don’t know the true model, though, especially for a single predictor.
+
+
+## Question - 3
+
+#### 3. Since you are simulating the data, you can actually see what happens in repeated sampling. Hence, repeat the sampling \( M = 10000 \) times keeping \( n = 1000 \) fixed (a simple `for`-loop will do it), and redo the comparison. Who’s the best now? Comment.
+
+
+## Answer - 3
+
+Now that we’ve compared the Bayes classifier and logistic regression on a single dataset, we want to take things a step further. Instead of just looking at one dataset of \( n = 1000 \), we’re going to repeat the whole process 10,000 times to see how these classifiers perform on average.  
+
+Since our data is simulated, the results will vary a little each time. Running multiple simulations helps us get a better idea of how well each classifier performs in the long run.  
+
+The data follows this structure:  
+- \( Y \) is binary with \( \mathbb{P}(Y=0) = \mathbb{P}(Y=1) = 0.5 \).  
+- Given \( Y = 0 \), \( X \sim \text{Uniform}(-3,1) \).  
+- Given \( Y = 1 \), \( X \sim \text{Uniform}(-1,3) \).  
+
+Bayes Classifier: Which is the theoretically optimal classifier in this case is a step function:  
+  \[
+  \eta^\star(x) =  
+  \begin{cases}  
+  0 & x < -1, \\  
+  \text{(either 0 or 1, tie)} & -1 \leq x \leq 1, \\  
+  1 & x > 1.  
+  \end{cases}  
+  \]
+Since we need a tie-breaking rule for \( -1 \leq x \leq 1 \), we’ll pick:  
+- Class 0 for \( -1 \leq x < 0 \)  
+- Class 1 for \( 0 \leq x \leq 1 \)  
+
+Logistic Regression: Which is a practical classifier that learns the decision boundary from data rather than knowing the true distribution in advance.
+
+#### What We’re Going to Do  
+
+1. Run the experiment 10,000 times each time, we generate a new dataset of \( n = 1000 \).  
+2. Apply both classifiers (Bayes and logistic regression) and measure their misclassification rates.  
+3. Compare the results across all runs to see which classifier performs better on average.  
+
+This will give us a clearer picture of how each method holds up across different random samples.
+
+Since we need to run our experiment 10,000 times, it's best to set up some helper functions to keep things organized and efficient.
+
+#### Generating the Data  
+
+We first create a function to simulate a dataset of size \( n = 1000 \). Each time we run it, it will generate new values for \( X \) and \( Y \) based on the given distributions:  
+
+- \( Y \) is randomly chosen as 0 or 1 with equal probability.  
+- If \( Y = 0 \), then \( X \) is drawn from Uniform(-3,1).  
+- If \( Y = 1 \), then \( X \) is drawn from Uniform(-1,3).  
+
+```{r data-gen}
+generate_data <- function(n = 1000) {
+  # Generate Y
+  Y <- rbinom(n, 1, 0.5)
+  
+  # Allocate X
+  X <- numeric(n)
+  
+  # Number of 0s and 1s
+  n0 <- sum(Y == 0)
+  n1 <- sum(Y == 1)
+  
+  # Uniform draws
+  X[Y == 0] <- runif(n0, min = -3, max = 1)
+  X[Y == 1] <- runif(n1, min = -1, max = 3)
+  
+  # Return as data frame
+  data.frame(X = X, Y = factor(Y))
+}
+```
+
+#### Implementing the Bayes Classifier  
+
+Since the Bayes classifier is a step function, we need a rule to break ties in the region where \( -1 \leq X \leq 1 \). We'll use this simple rule:  
+
+- If \( X < -1 \), predict 0.  
+- If \( X > 1 \), predict 1.  
+- If \( X \) is in the tie region (\(-1 \leq X \leq 1\)):  
+  - Predict 0 if \( X < 0 \)  
+  - Predict 1 if \( X \geq 0 \)  
+
+```{r bayes-classifier}
+bayes_classifier <- function(x) {
+  if (x < -1) {
+    return(0)
+  } else if (x > 1) {
+    return(1)
+  } else {
+    # tie region: let's pick 0 for x < 0, 1 for x >= 0
+    if (x < 0) {
+      return(0)
+    } else {
+      return(1)
+    }
+  }
+}
+```
+
+Since we’ll be classifying a whole dataset at once, we vectorize the function to make it more efficient:  
+
+```{r bayes-predict}
+bayes_predict <- function(x_vec) {
+  sapply(x_vec, bayes_classifier)
+}
+```
+
+#### Calculating the Misclassification Rate  
+
+Finally, we define a function to compute the misclassification rate, which simply calculates the proportion of predictions that do not match the actual values in the dataset.  
+
+```{r error-fn}
+misclass_rate <- function(pred, truth) {
+  mean(pred != truth)
+}
+```
+
+This function takes in two vectors:  
+- `pred`: the predicted labels  
+- `truth`: the actual labels  
+
+It then compares them element by element and returns the proportion of incorrect classifications.  
+
+---
+
+#### Running Main Experiment:
+
+We’ll repeat our classification process 10,000 times to see how the Bayes classifier and logistic regression perform on average.  
+
+- \( M = 10,000 \) (number of simulations)  
+- \( n = 1,000 \) (number of observations per dataset)  
+
+For each simulation:  
+1. Generate a dataset of \( (X, Y) \) pairs.  
+2. Apply the Bayes classifier and record its misclassification rate.  
+3. Train a logistic regression model, make predictions, and record its misclassification rate.  
+
+
+```{r repeated-sampling, cache=TRUE}
+M <- 10000
+n <- 1000
+
+bayes_errors <- numeric(M)
+logistic_errors <- numeric(M)
+
+for (m in seq_len(M)) {
+  # Step 1: Generate data
+  df <- generate_data(n)
+  
+  # Step 2: Bayes classifier
+  bayes_pred <- bayes_predict(df$X)
+  bayes_errors[m] <- misclass_rate(bayes_pred, df$Y)
+  
+  # Step 3: Logistic regression
+  #          (We could catch singular fits, but with large n=1000
+  #           that is unlikely. We'll keep it straightforward.)
+  glm_fit <- glm(Y ~ X, data = df, family = binomial)
+  prob_hat <- predict(glm_fit, newdata = df, type = "response")
+  logistic_pred <- ifelse(prob_hat >= 0.5, 1, 0)
+  logistic_errors[m] <- misclass_rate(logistic_pred, df$Y)
+}
+```
+
+---
+
+#### Results and Comparison
+
+Now that we have 10,000 misclassification rates for both classifiers, let’s compute their average performance:  
+
+```{r summary-stats}
+bayes_mean_err    <- mean(bayes_errors)
+logistic_mean_err <- mean(logistic_errors)
+
+cat("Average Bayes misclassification over", M, "runs:", bayes_mean_err, "\n")
+cat("Average Logistic misclassification over", M, "runs:", logistic_mean_err, "\n")
+```
+
+#### Visualizing the Error Distribution  
+
+To get a better idea of how these classifiers perform, we can plot the distribution of misclassification rates over the 10,000 runs.  
+
+```{r distribution-plot, echo=FALSE, warning=FALSE, message=FALSE}
+df_plot <- data.frame(
+  Method = rep(c("Bayes", "Logistic"), each = M),
+  ErrorRate = c(bayes_errors, logistic_errors)
+)
+
+library(ggplot2)
+ggplot(df_plot, aes(x = ErrorRate, color = Method, fill = Method)) +
+  geom_density(alpha = 0.3) +
+  theme_minimal(base_size = 14) +
+  labs(title = paste("Distribution of Misclassification Rates (M=", M, "runs)"),
+       x = "Misclassification Rate", y = "Density") +
+  scale_color_discrete(name = "Classifier") +
+  scale_fill_discrete(name = "Classifier")
+```
+
+---
+
+#### Results  
+
+##### Bayes Classifier  
+- As expected, the Bayes rule achieves the lowest possible true error because it is based on the exact probability distribution.  
+- Across 10,000 simulations, its misclassification rate remains stable, consistently hitting around its theoretical minimum.  
+- Since it follows the optimal classification rule, no other method can strictly outperform it.
+
+##### Logistic Regression  
+- Unlike Bayes, logistic regression estimates the decision boundary from data rather than knowing it in advance.  
+- Because it assumes a smooth sigmoid shape for \(\mathbb{P}(Y=1 \mid X)\), it cannot perfectly replicate the stepwise nature of the Bayes rule.  
+- However, with \(n=1000\) training points, logistic regression still performs reasonably well, getting close to the optimal decision boundary.  
+- We expect its misclassification rate to be slightly higher than Bayes on average.
+
+#### Summary of Performance  
+- Bayes: ~0.25 average error.  
+- Logistic Regression: Slightly worse, around 0.26–0.27.  
+- While the exact numbers vary from run to run, Bayes consistently outperforms logistic regression, confirming that no classifier can achieve a strictly lower *true* error than the optimal Bayes rule. 
+
+---
+
+#### Conclusion  
+
+- This experiment confirms that when the true data distribution is known, the Bayes classifier is the best possible classifier—it achieves the lowest error rate by definition. Over thousands of simulations, it consistently outperforms logistic regression, which must learn the decision boundary from data rather than knowing it outright.
+- If the exact probability distributions are known, the Bayes classifier is unbeatable.
+- In real-world problems, we *don’t* know the true distributions, so we rely on models like logistic regression. While it isn’t as perfect as Bayes, it still performs well, especially with large datasets.  
+- The Bayes classifier serves as a theoretical benchmark. Any practical classifier—whether logistic regression, decision trees, or neural networks—is judged by how closely it can approximate the Bayes rule when the true data distribution is unknown. 
+
+
+---
+
+# Homework Part 2+3 {#part2-3}
+
+## Question - 1
+
+#### ⤠ Your job - Warm-up ⤟
+
+1. Review/study the concepts of size, power, and p-value: go back to Moodle, grab my slides on Hypothesis Testing.
+
+2. Read and understand Friedman’s paper. Write a high-level, well-commented pseudo-code that summarizes the two-sample test described by Friedman.  
+   Also, add a few lines to explain why he suggests using Mann-Whitney or Kolmogorov-Smirnov as baseline tests.
+
+# Answer - 1
+
+#### 1. Size, Power, and p-value
+
+##### Size of a Test (Significance Level)
+- The size of a test, also called the significance level \(\alpha\), is the probability of wrongly rejecting the null hypothesis when it’s actually true (a Type-I error).
+- If we set \(\alpha = 0.05\), it means that under \(H_0\), we are willing to accept a 5% chance of mistakenly concluding there’s a difference when there actually isn’t.
+
+##### Power of a Test
+- The power of a test is how good it is at detecting a real difference—that is, correctly rejecting \(H_0\) when \(H_1\) is true.
+- A test with high power means that if two distributions are different, we will catch that difference more often.
+- In formula terms, power is:  
+  \[
+  P_{H_1}(\text{Reject }H_0)
+  \]
+  Ideally, we want power to be as high as possible while keeping the Type-I error under control.
+
+##### p-value
+- A p-value tells us how extreme our observed data is under the assumption that \(H_0\) is true.
+- If we get a really small p-value (e.g., less than 0.05), it suggests that seeing data like ours would be very unlikely if \(H_0\) were true, so we reject \(H_0\).
+- But if the p-value is large, we don’t have enough evidence to reject \(H_0\)—which doesn’t necessarily mean \(H_0\) is true, just that we can’t confidently say it’s false.
+
+---
+
+#### 2. Friedman’s Two-Sample Test (How It Works in Simple Terms)
+
+Friedman’s test is a clever way to check if two distributions, \(F_X\) and \(F_Y\), are the same. The basic idea is:
+
+1. Train a Classifier  
+   - Take the two samples \(X = \{X_1, ..., X_n\}\) and \(Y = \{Y_1, ..., Y_m\}\).
+   - Label them as “Class 0” (for \(X\)) and “Class 1” (for \(Y\)).
+   - Train a classifier (e.g., logistic regression, random forest, or an SVM) on this combined dataset.
+   - The classifier should try to separate the two groups as best as it can.
+
+2. Get Scores from the Classifier  
+   - Once the classifier is trained, we can pass each data point through it and get a score—basically a number that tells us how confident the classifier is that the point belongs to Class 1.
+   - This gives us two sets of scores:  
+     \[
+     \text{scores}_X = \{s(X_1), ..., s(X_n)\}, \quad
+     \text{scores}_Y = \{s(Y_1), ..., s(Y_m)\}
+     \]
+     where \(s(X_i)\) is the classifier’s score for sample \(X_i\).
+
+3. Compare the Score Distributions  
+   - Now we just need to check if these two sets of scores look different.
+   - Since they are now just numbers, we can use simple 1D statistical tests like:
+     - Mann–Whitney U test (also called the Wilcoxon rank-sum test)
+     - Kolmogorov–Smirnov (K–S) test
+   - If the test finds a significant difference, we reject \(H_0\) and conclude that \(F_X\) and \(F_Y\) are likely not the same.
+
+---
+
+#### Pseudo-Code for Friedman’s Test
+Here’s a simple way to write out the steps in code:
+
+```{r, eval=FALSE}
+# ------------------------------------------------------------
+# Friedman’s Two-Sample Test (Pseudo-code)
+# ------------------------------------------------------------
+
+# Suppose we have two samples:
+#   X = {X1, ..., Xn} from distribution F_X
+#   Y = {Y1, ..., Ym} from distribution F_Y
+# combined into a single dataset D = X ∪ Y with labels.
+
+# 1. Train a classifier on all data:
+#    - Input: Full dataset D (both classes combined)
+#    - Output: A fitted classifier Classif and a scoring function s() 
+#              that assigns a real-valued score to any data point.
+
+train_classifier <- function(D) {
+  # D is labeled: each point belongs to either class X or class Y
+  # (In practice, we can use logistic regression, random forest, SVM, etc.)
+  #
+  # Return:
+  #   Classif: the trained classification model
+  #   s(): function that, for each data point, returns the classifier’s score
+}
+
+# 2. Compute scores for each data point:
+scores_X <- s(X)  # Real-valued scores for sample X
+scores_Y <- s(Y)  # Real-valued scores for sample Y
+
+# 3. Use a univariate two-sample test on these scores:
+#    - Compare distribution of scores_X vs. scores_Y
+#    - For example, use Mann-Whitney or Kolmogorov-Smirnov:
+#         T_stat = testStatistic(scores_X, scores_Y)
+#         p_value = pValueFrom(T_stat, "Mann-Whitney" or "KS")
+test_result <- mann_whitney_or_KS(scores_X, scores_Y)
+
+# 4. Decision:
+#    - If p_value < alpha => Reject H0 (i.e., conclude F_X != F_Y)
+#    - Else, do not reject H0
+if (test_result$p_value < alpha) {
+  print("Reject H0: The two distributions are different.")
+} else {
+  print("Do not reject H0: No strong evidence that the distributions differ.")
+}
+```
+
+#### Why Use Mann–Whitney or Kolmogorov–Smirnov?
+- Friedman suggests using Mann-Whitney or Kolmogorov-Smirnov because they don’t require any assumptions about the data’s distribution, unlike t-tests, which assume normality. This makes them flexible and reliable in various scenarios.
+- Each test captures different types of differences between distributions. Mann-Whitney focuses on shifts in the median, while Kolmogorov-Smirnov looks at the biggest difference between the two cumulative distribution functions (CDFs), making it sensitive to both shifts and changes in shape.
+- They also work well with classifier scores. Since the classifier outputs continuous values, these tests help determine whether the distributions of scores differ significantly between the two groups.
+- Another big plus is that they are simple to compute. They’re built into R, Python, and most statistical software, making them easy to apply without much hassle.
+
+#### Additional Notes to Friedman’s Test
+
+- Friedman’s test is a clever way to handle high-dimensional data. Instead of comparing two datasets directly in a complex space, it lets a classifier learn the differences and then reduces the problem to a straightforward comparison of 1D scores.
+- The accuracy of the test depends on how well the classifier performs. If the classifier can easily separate the two groups, their distributions are likely different. If it struggles, they are probably similar.
+- This approach is widely used in real-world applications like genetics, neuroscience, and image analysis, where traditional methods often struggle with high-dimensional data.
+
+---
+
+## Question - 2
+
+#### ⤠ Your job - Part 2 ⤟
+
+- Now pick any binary classifier you feel comfortable with (e.g., logistic regression ~ in R see `?glm`).  
+  Feel free to ask me (on Moodle) info on packages in R that implement a specific technique.  
+
+- Based on this classifier, implement Friedman's procedure and setup a simulation study to gather information on the size and power of the associated test under different scenarios.  
+
+In practice, once you decide the simulation size M, you should pick:  
+- a sample size, say n₀ and n₁, for each of the two classes, say 0 and 1;  
+- the dimension of the feature vector, say k;  
+- and the conditional k-variate distributions F₀(·) and F₁(·) from which you sample the actual data.  
+
+Remember that here we are testing:  
+H₀: F₀ = F₁ vs. H₁: F₀ ≠ F₁.  
+
+Hence, as also summarized in my [additional scribbles](#), to approximate the power of our test, you must work under H₁ by picking two different (k-variate) distributions to sample from. Clearly, for fixed sample sizes n₀ and n₁, the closer (in some distance) F₀ is to F₁, the harder it is to distinguish them based on the finite sampling information provided ~ the lower the power achievable. Consequently, here the main question of genuine mathematical interest is how the power varies as we tweak the distance between F₀ and F₁. You may play around with k, n₀, and n₁, and possibly any other relevant quantity.
+
+As usual, properly comment all the results and complement the numbers with suitable plots.
+
+## Answer - 2
+
+In this part, we’re going to:  
+
+1. Use Friedman’s two-sample test with logistic regression as our classifier.  
+2. Run a simulation study to estimate:  
+   - The size of the test (when \( H_0 \) is true, meaning both samples come from the same distribution, where \(F_0 = F_1\)).  
+   - The power of the test (when \( H_1 \) is true, meaning the two distributions are different, where \(F_0 \neq F_1\)).  
+3. Analyze how power changes as we increase the difference between the two distributions.  
+
+The main idea is to check whether the test can correctly detect differences between distributions as we tweak the separation between them.  
+
+---
+
+#### Friedman’s Test steps:
+
+Given two samples:
+\[
+\text{Class 0}: \{X_1, \dots, X_{n_0}\} \quad \text{from } F_0, \quad
+\text{Class 1}: \{Y_1, \dots, Y_{n_1}\} \quad \text{from } F_1,
+\]
+
+based on the Friedman’s approach we should:
+
+1. Train a Classifier on all data (both classes).  
+2. Obtain a Real-Valued Score from the trained classifier for each data point.  
+3. Use a Univariate Two-Sample Test (e.g., Mann–Whitney) on these scores to check if the distributions of scores in Class 0 vs. Class 1 differ significantly.  
+4. Reject \(H_0\) if the p-value is below \(\alpha\).
+
+---
+
+#### Simulation:
+
+#### The Distributions \(F_0\) and \(F_1\)
+
+We simulate data from two (\(k\)-dimensional) multivariate normal distributions:  
+
+- Class 0 (from \( F_0 \)): \( X \sim \mathcal{N}(\mu_0, \Sigma) \) 
+- Class 1 (from \( F_1 \)): \( Y \sim \mathcal{N}(\mu_1, \Sigma) \)  
+
+where:  
+
+- \( \mu_0 \) = (0, 0, ..., 0) (origin in \( \mathbb{R}^k \)).  
+- \( \mu_1 \) = (\(\delta\), 0, ..., 0) (a shift along the first coordinate).  
+- \( \Sigma \) is the identity matrix (for simplicity).  
+
+The shift (\(\delta\)) controls how different the two distributions are. When \(\delta = 0\), they are identical (so \( H_0 \) is true). As \(\delta\) increases, the difference between them grows, making \( H_1 \) more obvious.  
+
+- Size of the test: When \( H_0 \) is true (\(\delta = 0\)), so \(F_0 = F_1\), the test should reject about 5% of the time (assuming we use \( \alpha = 0.05 \)).  
+- Power of the test: When \( H_1 \) is true (\(\delta > 0\)), the test should reject more often, especially as \(\delta\) gets larger.  
+
+#### Parameters for the Simulation  
+
+- Sample sizes: \( n_0 = 50 \), \( n_1 = 50 \)  
+- Dimension of the data: \( k = 2 \)  
+- Number of simulations: \( M = 1000 \)  
+- Significance level: \( \alpha = 0.05 \)  
+
+---
+
+#### Implementing the Simulation in R  
+
+##### Generating Simulated Data
+
+We create a function to generate two classes from multivariate normal distributions:
+
+```{r}
+generate_data <- function(n0, n1, k, delta = 0) {
+  # Mean vectors
+  mu0 <- rep(0, k)
+  mu1 <- c(delta, rep(0, k - 1))
+  
+  # Covariance: identity matrix
+  Sigma <- diag(k)
+  
+  # Generate data for Class 0 and Class 1
+  X0 <- MASS::mvrnorm(n = n0, mu = mu0, Sigma = Sigma)
+  X1 <- MASS::mvrnorm(n = n1, mu = mu1, Sigma = Sigma)
+  
+  # Combine into one data.frame with labels
+  data_0 <- data.frame(X = X0, label = 0)
+  data_1 <- data.frame(X = X1, label = 1)
+  data_full <- rbind(data_0, data_1)
+  
+  # Shuffle rows to remove any ordering effect
+  data_full <- data_full[sample(nrow(data_full)), ]
+  rownames(data_full) <- NULL
+  
+  return(data_full)
+}
+```
+
+##### Friedman’s Test Function
+
+We will:
+
+- Train a logistic regression (`glm`) on the full dataset.
+- Predict the probability of being in Class 1 for each point.
+- Apply a Mann–Whitney rank-sum test (Wilcoxon test) on those predicted probabilities in each class.
+- Return the p-value.
+
+```{r}
+friedman_test <- function(data_full, alpha = 0.05) {
+  # data_full columns: X.1, X.2, ..., X.k, label
+  # Train logistic regression (binary classification)
+  k <- ncol(data_full) - 1  # number of features
+  form <- as.formula(paste("label ~", paste0("X.", 1:k, collapse = " + ")))
+  
+  fit <- glm(form, data = data_full, family = binomial)
+  
+  # Get predicted probabilities (scores)
+  score <- predict(fit, type = "response")  # P(class = 1)
+  
+  # Compare scores in each class
+  scores_0 <- score[data_full$label == 0]
+  scores_1 <- score[data_full$label == 1]
+  
+  # Mann-Whitney (Wilcoxon rank-sum) test
+  test_out <- wilcox.test(scores_0, scores_1, alternative = "two.sided")
+  p_value <- test_out$p.value
+  
+  # Return p_value
+  return(p_value)
+}
+```
+
+##### Single Simulation Run
+
+A function that:
+
+- Generates data for a given \(\delta\).
+- Runs Friedman’s test.
+- Decides if we reject \( H_0 \) or not for a chosen \(\alpha\).
+
+```{r}
+single_run <- function(n0, n1, k, delta, alpha = 0.05) {
+  data_full <- generate_data(n0, n1, k, delta)
+  p_val <- friedman_test(data_full, alpha)
+  reject <- as.numeric(p_val < alpha)
+  return(reject)
+}
+```
+
+#### Monte Carlo Loop
+
+We repeat the above many times (\(M\) replications) to estimate the empirical rejection rate ~ the test’s size or power depending on \(\delta\).
+
+```{r}
+simulate_power <- function(M, n0, n1, k, delta_seq, alpha = 0.05) {
+  results <- data.frame(
+    delta = delta_seq,
+    rejection_rate = NA
+  )
+  
+  for (i in seq_along(delta_seq)) {
+    d <- delta_seq[i]
+    
+    # Run M simulations for each delta
+    rejections <- replicate(
+      M,
+      single_run(n0 = n0, n1 = n1, k = k, delta = d, alpha = alpha)
+    )
+    
+    # Empirical proportion of rejections
+    results$rejection_rate[i] <- mean(rejections)
+  }
+  
+  return(results)
+}
+```
+
+#### Running the Simulation
+
+Below, we pick some parameters to illustrate:
+
+- \(M = 1000\): number of Monte Carlo repetitions.
+- \(n_0 = n_1 = 50\).
+- \(k = 2\) (2-dimensional feature space for simplicity).
+- \(\delta\) from 0 up to 2 in increments of 0.2.
+
+
+\(\delta = 0\) corresponds to \(H_0\), so the rejection rate should be near \(\alpha = 0.05\).
+
+As \(\delta\) grows, the distributions become more separated in the first coordinate, so we expect the classifier-based test to reject more often.
+
+```{r}
+M <- 1000
+n0 <- 50
+n1 <- 50
+k  <- 2
+alpha_level <- 0.05
+
+delta_values <- seq(0, 2, by = 0.2)
+
+# Run the simulation
+sim_results <- simulate_power(
+  M = M,
+  n0 = n0,
+  n1 = n1,
+  k = k,
+  delta_seq = delta_values,
+  alpha = alpha_level
+)
+
+sim_results
+```
+
+---
+
+#### Plotting the Results
+
+We can visualize how the rejection rate (size/power) depends on \(\delta\).
+
+```{r}
+ggplot(sim_results, aes(x = delta, y = rejection_rate)) +
+  geom_line(color = "blue") +
+  geom_point(color = "blue") +
+  geom_hline(yintercept = alpha_level, linetype = "dashed", color = "red") +
+  labs(
+    title = "Friedman’s Test via Logistic Regression: Size & Power",
+    subtitle = paste("n0 =", n0, ", n1 =", n1, ", k =", k, ", M =", M),
+    x = expression(delta),
+    y = "Empirical Rejection Rate"
+  ) +
+  theme_minimal()
+```
+
+- The red dashed line marks \(\alpha = 0.05\). We expect the rejection rate at \(\delta = 0\) to be close to this.
+- As \(\delta\) increases, the rejection rate should rise, reflecting increasing power.
+
+---
+
+#### Observations & Conclusion
+
+- When \(\delta = 0\), the test should only reject about 5% of the time, which is expected if everything is working properly. Small deviations from this are normal due to the finite number of simulations.  
+
+- As \(\delta\) increases, the two distributions move further apart, making it easier for the logistic regression classifier to separate them.
+- We should see the rejection rate increase, eventually approaching 1 for large enough \(\delta\), meaning the test almost always detects a difference when one exists.  
+
+- Different factors can affect the test’s performance. Trying out different sample sizes (\(n_0, n_1\)), feature dimensions (\(k\)), or even using alternative classifiers like random forests or SVMs can influence the results. 
+
+- In higher dimensions, power might decrease unless the difference between distributions is strong or the classifier is well-suited to handle the complexity.  
+
+- For a more precise p-value, a permutation test could be applied to the classifier’s scores. This method is more computationally demanding but gives better control over Type-I error. For simplicity, we relied on the Mann–Whitney test on predicted probabilities instead.  
+
+- This simulation showed how to apply Friedman’s two-sample test using logistic regression. By running multiple simulations, we analyzed how often the test correctly identifies differences between distributions as we tweak the separation (\(\delta\)).  
+
+
+## Question - 3
+
+## ⤠ Your job - Part 3 ⤟
+
+- Time to apply Friedman's procedure to our HR data. Since Zone-2 training is quite big these days, to start with, identify Zone-2 with class 0 and Zone-3 with class 1. Easy.  
+  Now, the next big step is the crucial one: although functional data analysis is a thing, here you will proceed in a different way by manually embedding our original speed-altitude feature set in a vector space of your choosing.
+
+- So, pick any number and type of relevant summary/statistics and extract them from each time series. Critically comment and explain your choices also in light of the classification performance achieved.
+
+- In the end, based on the available data and the choices you made (the classifier, the embedding, etc.), is Fₓₒₙₑ-2 significantly different from Fₓₒₙₑ-3? Properly comment the results and complement the numbers with suitable plots.
+
+- Finally, any idea on how to handle the extended null: H₀: F_zone-2 = F_zone-3 = F_zone-4? Good, try it out!
+
+
+# Answer - 3
+
+We apply Friedman’s two-sample test to real-world heart rate (HR) zone data from running. The idea is to see whether the distributions of different HR zones, specifically Zone-2 (light effort), Zone-3 (moderate effort), and Zone-4 (hard effort), are statistically different based on speed and altitude measurements.  
+
+- Zone-2: Light effort
+- Zone-3: Moderate effort
+- Zone-4: Hard effort
+
+Each observation represents a 60-second segment of a run and contains:  
+
+- `y`: The HR zone label (`Zone-2`, `Zone-3`, or `Zone-4`).  
+- `sp.1` to `sp.60`: Speed (m/s) recorded every second for 60 seconds.  
+- `al.1` to `al.60`: Altitude (meters above sea level) recorded every second for 60 seconds.  
+
+
+#### Our Goals is to:
+
+1. Compare Zone-2 vs. Zone-3  
+   - Train a classifier using selected features, treating Zone-2 as class 0 and Zone-3 as class 1.  
+   - Get classifier scores (e.g., predicted probabilities).  
+   - Run a Mann–Whitney test on these scores to check if the distributions differ.  
+   - If they do, we conclude that \( F_{\text{Zone-2}} \neq F_{\text{Zone-3}} \).  
+
+2. Look at All Three Zones Together  
+   - Test H₀: F_{Zone-2} = F_{Zone-3} = F_{Zone-4} to see if all three distributions are the same.  
+   - One way to do this is by running pairwise tests (Zone-2 vs. Zone-3, Zone-2 vs. Zone-4, Zone-3 vs. Zone-4) and checking for consistency. Another option is to apply a multi-class version of Friedman’s procedure.  
+
+3. Feature Selection & Embedding  
+   - Instead of using all 60 speed and 60 altitude values directly (which would be a 120-dimensional mess), we summarize them into meaningful statistics.  
+   - We extract features like mean speed, standard deviation, max speed, altitude gain/loss, etc.  
+   - The choice of these features should make sense based on what we expect to separate running intensities. We’ll also analyze whether they actually help classification performance.  
+
+---
+
+#### Data Loading and Exploration
+
+```{r data-loading}
+# Load the HR dataset:
+load("hw_data.RData")
+
+# Let's inspect the label distribution:
+table(hw$y)
+```
+
+- We see how many 1-minute segments (observations) belong to `Zone-2`, `Zone-3`, and `Zone-4`.
+
+---
+
+## 3. Feature Construction (Embedding)
+
+To create a more manageable feature vector per sample, we’ll extract summary measures from the speed (sp.*) and altitude (al.*) time series.
+
+1. Mean speed: overall average speed across the 60 seconds.  
+2. Standard deviation of speed: measure of speed variability.  
+3. Max speed: top speed within the 60-second window.  
+4. Mean altitude: average altitude over the minute.  
+5. Altitude gain: sum of positive altitude changes (how many meters climbed).  
+6. Altitude loss: sum of negative altitude changes (how many meters descended).
+
+These features capture key differences between effort levels in different HR zones.
+
+```{r feature-engineering}
+feature_engineering <- function(df) {
+  # df: single row with sp.1, sp.2, ..., sp.60, al.1, ..., al.60, y
+  
+  # Speeds
+  sp_cols <- grep("^sp\\.", names(df), value = TRUE)
+  speeds  <- unlist(df[sp_cols])
+  
+  # Altitudes
+  al_cols <- grep("^al\\.", names(df), value = TRUE)
+  alts    <- unlist(df[al_cols])
+  
+  # 1. Mean speed
+  mean_sp <- mean(speeds)
+  # 2. Sd speed
+  sd_sp <- sd(speeds)
+  # 3. Max speed
+  max_sp <- max(speeds)
+  
+  # 4. Mean altitude
+  mean_al <- mean(alts)
+  
+  # 5. Alt gain & 6. Alt loss
+  alt_diff <- diff(alts)
+  alt_gain <- sum(alt_diff[alt_diff > 0])
+  alt_loss <- sum(abs(alt_diff[alt_diff < 0]))
+  
+  # Return a named vector of features
+  feats <- data.frame(
+    mean_sp = mean_sp,
+    sd_sp   = sd_sp,
+    max_sp  = max_sp,
+    mean_al = mean_al,
+    alt_gain = alt_gain,
+    alt_loss = alt_loss
+  )
+  return(feats)
+}
+
+# Apply to entire dataset
+# We'll create a new data frame: 'hw_feats'
+hw_feats <- hw %>%
+  rowwise() %>%
+  do( cbind(feature_engineering(.), data.frame(y = .$y)) ) %>%
+  ungroup()
+
+head(hw_feats)
+```
+
+Now, instead of 120 features per observation, we have just six meaningful features + the HR zone label (label `y`).
+
+---
+
+#### Friedman’s Two-Sample Test on Zone-2 vs Zone-3:
+
+##### Subset Data
+
+We filter only Zone-2 (class 0) and Zone-3 (class 1) for the binary classification.
+
+```{r subset-z2-z3}
+hw_z2z3 <- hw_feats %>%
+  filter(y %in% c("Zone-2", "Zone-3")) %>%
+  mutate(label = ifelse(y == "Zone-2", 0, 1))
+```
+
+##### Train Classifier + Obtain Scores
+
+We’ll use a logistic regression as our classifier. Then we’ll get predicted probabilities of belonging to class 1 (Zone-3) as our continuous score.
+
+```{r logistic-z2-z3}
+# Remove rows with missing values
+hw_z2z3 <- hw_z2z3 %>% drop_na()
+
+# Fit logistic regression model
+fit_z2z3 <- glm(
+  label ~ mean_sp + sd_sp + max_sp + mean_al + alt_gain + alt_loss,
+  data = hw_z2z3,
+  family = binomial,
+  control = glm.control(maxit = 300)
+)
+
+# Generate predicted probabilities
+score_z2z3 <- predict(fit_z2z3, type = "response")
+
+# Add scores to the dataset
+hw_z2z3 <- hw_z2z3 %>% mutate(score = score_z2z3)
+
+# Verify that there are no mismatches
+nrow(hw_z2z3) == length(score_z2z3)  # Should return TRUE
+
+# Inspect summary
+summary(fit_z2z3)
+```
+
+#### Checking if Zone-2 and Zone-3 Are Different  
+
+Now we run a Mann–Whitney (Wilcoxon rank-sum) test to see if the predicted scores for Zone-2 and Zone-3 are significantly different.  
+
+According to Friedman’s procedure:  
+
+1. Separate the classifier scores by class label.  
+2. Perform a Wilcoxon rank-sum test on these scores.  
+3. If the p-value < 0.05, we reject the null hypothesis and say the distributions are significantly different.  
+
+```{r friedman-z2-z3}
+scores_0 <- hw_z2z3$score[hw_z2z3$label == 0]  # Zone-2
+scores_1 <- hw_z2z3$score[hw_z2z3$label == 1]  # Zone-3
+
+wilcox_z2z3 <- wilcox.test(scores_0, scores_1, alternative = "two.sided")
+wilcox_z2z3
+```
+
+- The p-value from this test tells us if Zone-2 and Zone-3 have different score distributions.  
+
+#### Results and Interpretation
+
+```{r interpret-z2-z3, echo=FALSE}
+pval_z2z3 <- wilcox_z2z3$p.value
+pval_z2z3
+```
+
+- If the p-value < 0.05, we reject the null hypothesis and conclude that Zone-2 and Zone-3 have significantly different distributions.  
+- If the p-value is very small, it strongly suggests that Friedman’s test successfully detects a difference between the two zones.  
+
+---
+
+#### Visualizing the Score Distributions
+
+To see better how the classifier separates the two zones, we visualize the predicted scores:  
+
+```{r score-plot-z2-z3}
+hw_z2z3 %>%
+  mutate(LabelName = ifelse(label == 0, "Zone-2", "Zone-3")) %>%
+  ggplot(aes(x = LabelName, y = score, fill = LabelName)) +
+  geom_boxplot(alpha = 0.5) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(title = "Classifier Score Distribution (Zone-2 vs Zone-3)",
+       x = "Class",
+       y = "Predicted Probability of Zone-3")
+```
+
+- There is a clear separation between the two groups, it means our feature selection and classifier are doing a good job at distinguishing Zone-2 from Zone-3.
+- There’s some overlap, meaning a few Zone-2 instances are getting high scores and some Zone-3 instances are getting low ones, so it's not perfect.  
+- The spread of scores is different—Zone-3 has more variation, while Zone-2 scores are more tightly packed.  
+- The median score for Zone-3 is clearly higher than for Zone-2, which supports the idea that the two zones are significantly different.
+
+#### Why we considered these features?  
+
+- We used mean speed, standard deviation, max speed, mean altitude, total altitude gain, and altitude loss because they capture key differences in running effort.  
+- If Zone-2 and Zone-3 represent different training intensities, we’d expect their distributions for these features to be different.
+- The significance of the test result tells us that the way speed and altitude fluctuate is meaningfully different between the two zones.    
+
+---
+
+#### Is \(F_{\text{Zone-2}}\) Significantly Different from \(F_{\text{Zone-3}}\)?
+
+- The short answer is that if the Wilcoxon test gives us a p-value < 0.05, then yes, the two zones are statistically different.  
+- If the p-value is extremely small, that’s even stronger evidence that Zone-2 and Zone-3 come from different distributions.  
+
+
+####  Extending the Test: Zone-2 vs. Zone-3 vs. Zone-4  
+
+Now, let’s see if all three HR zones (Zone-2, Zone-3, and Zone-4) come from the same distribution by testing \(H₀: F_{\text{Zone-2}} = F_{\text{Zone-3}} = F_{\text{Zone-4}}\).
+
+There are two ways to approach this:  
+
+1. Pairwise Testing  
+   - Compare (Zone-2 vs. Zone-3), (Zone-2 vs. Zone-4), and (Zone-3 vs. Zone-4) separately using Friedman’s method.  
+   - If at least one of these tests is significant, we conclude that at least one zone is different from the others.  
+   - To avoid false positives due to multiple testing, we might adjust for multiple comparisons (e.g., Bonferroni correction).  
+
+2. Multi-Class Approach  
+   - Train a multi-class classifier (e.g., multinomial logistic regression) for the three zones.  
+   - Instead of a binary score, extract a single numeric score (e.g., probability of being in Zone-4).  
+   - Run a Kruskal-Wallis test, which is a nonparametric version of ANOVA for comparing more than two groups.  
+   - If the test is significant, at least one HR zone is different from the others.
+
+
+#### Illustrating Pairwise Tests
+
+Below is a quick demonstration of how to do the same Friedman procedure for each pair:
+
+```{r zone4-pairwise}
+# Subset for Zone-2 vs Zone-4
+hw_z2z4 <- hw_feats %>%
+  filter(y %in% c("Zone-2", "Zone-4")) %>%
+  mutate(label = ifelse(y == "Zone-2", 0, 1))
+
+fit_z2z4 <- glm(
+  label ~ mean_sp + sd_sp + max_sp + mean_al + alt_gain + alt_loss,
+  data = hw_z2z4, family = binomial,
+  control = glm.control(maxit = 300)
+)
+score_z2z4 <- predict(fit_z2z4, type = "response")
+wilcox.test(score_z2z4[hw_z2z4$label==0], score_z2z4[hw_z2z4$label==1])
+
+# Subset for Zone-3 vs Zone-4
+hw_z3z4 <- hw_feats %>%
+  filter(y %in% c("Zone-3", "Zone-4")) %>%
+  mutate(label = ifelse(y == "Zone-3", 0, 1))
+
+fit_z3z4 <- glm(
+  label ~ mean_sp + sd_sp + max_sp + mean_al + alt_gain + alt_loss,
+  data = hw_z3z4, family = binomial,
+  control = glm.control(maxit = 300)
+)
+
+score_z3z4 <- predict(fit_z3z4, type = "response")
+wilcox.test(score_z3z4[hw_z3z4$label==0], score_z3z4[hw_z3z4$label==1])
+```
+
+- If any of these p-values are below 0.05, then we conclude that the corresponding zones have different distributions.
+
+#### What is the warning for:
+
+- `Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred`
+
+- These warnings happen when the model can almost perfectly separate the two classes, so some predictions end up extremely close to 0 or 1. That makes the logistic regression algorithm struggle to find stable parameter estimates.
+Sometimes it doesn’t converge fully and sometimes it flags that probabilities are basically 0 or 1.
+
+- We increased the number of iterations using `glm.control(maxit = 300)`, which helps in some cases. However, the issue persisted, which means that the data is nearly perfectly separable. 
+- To fix this, we can use a penalized logistic regression like `glmnet` or `brglm2`, which prevents coefficients from becoming too large. Another option is to check if any single feature is causing perfect separation and remove it. Switching to a different model, like an SVM or decision tree, could also help.  
+
+- These warnings are mostly minor because they don’t stop the model from running or giving predictions. Some coefficient estimates might be unreliable, but since we only need predicted probabilities for the Friedman test, this doesn’t affect the results much.
+
+#### Multi-Class Approach 
+
+Instead of running separate pairwise tests, we can test all three zones at once with a multi-class model:
+
+1. Train a three-class classifier (e.g., multinomial logistic regression).
+2. Extract a single numeric score from the model—this could be the predicted probability of being in Zone-4, or another relevant measure.
+3. Run a Kruskal-Wallis test on this score to check if at least one group is significantly different.
+
+If the Kruskal-Wallis test gives a significant result, we know that at least one HR zone differs from the others. From there, we can follow up with post-hoc pairwise tests (e.g., Wilcoxon rank-sum) to figure out exactly which zones are different.
+
+---
+
+#### Conclusion
+
+- We found that Zone-2 and Zone-3 are significantly different based on their speed and altitude distributions. The Wilcoxon test on classifier scores gave a very small p-value, meaning the two zones are not drawn from the same distribution.  
+
+- We tested the extended null hypothesis by including Zone-4 and considered two approaches:  
+  1. Running pairwise Friedman tests (Zone-2 vs. Zone-3, Zone-2 vs. Zone-4, and Zone-3 vs. Zone-4) and using multiple testing corrections if needed.  
+  2. Using a multi-class classifier trained on all three zones and applying a Kruskal-Wallis test to check if at least one distribution was different from the others. If significant, we could then run post-hoc pairwise tests to see where the differences were.  
+
+- We kept our feature selection simple, using basic statistics like mean speed, standard deviation, max speed, altitude gain, and altitude loss. These features worked well for distinguishing between zones, but more advanced feature extraction (like functional data analysis, spectral decomposition, or deep learning) could improve accuracy.  
+
+- We saw that Zone-2 and Zone-3 are clearly different at a 60-second timescale, confirming that effort levels change significantly between light (Zone-2) and moderate (Zone-3) training.  
+
+- When we included Zone-4, we found even more differences, but the best way to analyze them depends on whether we treat it as a multi-class problem or break it down into pairwise comparisons.  
+
+- With better feature engineering and classification methods, this approach could be used to analyze other fitness datasets and understand different effort levels in training.
+
+
+
